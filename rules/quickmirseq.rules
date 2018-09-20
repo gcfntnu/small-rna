@@ -3,7 +3,7 @@
 def function():
     pass
 
-rule example:
+rule example__:
     output:
         'test.txt'
     conda:

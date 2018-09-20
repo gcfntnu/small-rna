@@ -30,4 +30,6 @@ if os.path.exists(extra_conf_fn):
         update_config(config, c)
 
 include:
-    'rules/example.rules'
+    'rules/mirge.rules'
+include:
+    'rules/quickmirseq.rules'
