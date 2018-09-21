@@ -1,0 +1,39 @@
+#-*- mode:snakemake -*-
+
+def filter_get_fastq(wildcards):
+    pass
+
+
+rule filter_mirna_truseseq:
+    input:
+        fastq = filter_get_fastq
+    output:
+        temp('data/tmp/GCF-2018-547-tmp/mirge/filtered/trueseq/{sample}.fastq.gz')
+    params:
+        args = '--mirna'
+    conda:
+        'envs/filter.yaml'
+    threads:
+        4
+    shell:
+        'atropos '
+        '-e {input.fastq} '
+        '-o {output} '
+        '-T {threads} '
+        '{params.args} '
+
+rule filter_bioscientific:
+    input:
+        rules.filter_mirna_truseseq.output
+    output:
+        temp('data/tmp/GCF-2018-547-tmp/mirge/filtered/bioscientific/{sample}.fastq.gz')
+    params:
+        '-f 4 -t 4 -m 16 -z '
+    threads:
+        4
+    conda:
+        'envs/filter.yaml'
+    shell:
+        'zcat {input.fastq} | fastx_trimmer '
+        '-o BB.fastq.gz '
+        '{params} ' 
