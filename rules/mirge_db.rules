@@ -32,6 +32,6 @@ rule download_db:
     shell:
         'wget -qO- {params.url} | tar xvz -C {params.out}'
 
-rule all_mirge_db:
+rule mirge_db:
     input:
         expand('data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt', org=['human'])

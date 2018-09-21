@@ -1,12 +1,35 @@
 #-*- mode:snakemake -*-
+import shutil
+import os
 
-def function():
-    pass
+include:
+    'mirge_db.rules'
 
-rule example:
+
+FASTQ_FILES = [config['samples'][i]['R1'] for i in SAMPLES]
+
+rule mirge_annotate:
+    input:
+        fastq = FASTQ_FILES,
+        db = 'data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt'
+    params:
+        bp = '/home/flatberg/miniconda3/envs/mirge/bin' ,
+        lib = 'data/ext/mirge',
+        args = '-ad illumina -di -ai -gff',
+        out = 'data/processed/mirge/{org}/{db}'
     output:
-        'test.txt'
+        'data/processed/mirge/{org}/{db}/test.txt'
     conda:
-        'envs/base.yaml'
+        'envs/mirge.yaml'
+    threads:
+        24
     shell:
-        'touch {output}'
+        'miRge2.0 annotate '
+        '-s {input.fastq} '
+        '-d {wildcards.db} '
+        '-pb {params.bp} '
+        '-lib {params.lib} '
+        '-sp {wildcards.org} '
+        '{params.args} '
+        '-cpu {threads} '
+        '-o {params.out} '
