@@ -25,10 +25,10 @@ URLS =  {'human':
 
 rule download_db:
     params:
-        url = lambda wildcards: URLS[wildcards.organism],
+        url = lambda wildcards: URLS[wildcards.org],
         out = 'data/ext/mirge'
     output:
-        'data/ext/mirge/{organism}/index.Libs/human_snorna.3.ebwt'
+        'data/ext/mirge/{org}/index.Libs/human_snorna.3.ebwt'
     shell:
         'wget -qO- {params.url} | tar xvz -C {params.out}'
 

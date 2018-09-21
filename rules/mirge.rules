@@ -4,9 +4,11 @@ import os
 
 include:
     'mirge_db.rules'
+include:
+    'filter.rules'
 
 
-FASTQ_FILES = [config['samples'][i]['R1'] for i in SAMPLES]
+FASTQ_FILES = expand('data/tmp/GCF-2018-547-tmp/mirge/filtered/bioscientific/{sample}.fastq.gz', sample=SAMPLES)
 
 rule mirge_annotate:
     input:
@@ -15,10 +17,10 @@ rule mirge_annotate:
     params:
         bp = '/home/flatberg/miniconda3/envs/mirge/bin' ,
         lib = 'data/ext/mirge',
-        args = '-ad illumina -di -ai -gff',
+        args = '-di -ai -gff -spikeInrm ',
         out = 'data/processed/mirge/{org}/{db}'
     output:
-        'data/processed/mirge/{org}/{db}/test.txt'
+        'data/processed/mirge/{org}/{db}/.done'
     conda:
         'envs/mirge.yaml'
     threads:

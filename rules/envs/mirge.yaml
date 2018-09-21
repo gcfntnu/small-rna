@@ -6,7 +6,7 @@ channels:
   - r
 dependencies:
   - bowtie=1.2.2=py27h2d50403_1
-  - cutadapt=1.18=py27_0
+  - cutadapt=1.17=py27_0
   - libdeflate=1.0=h470a237_0
   - mirge=2.0.6=py27_4
   - samtools=1.9=h8ee4bcc_1

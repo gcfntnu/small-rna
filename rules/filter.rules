@@ -1,7 +1,7 @@
 #-*- mode:snakemake -*-
 
 def filter_get_fastq(wildcards):
-    pass
+    return config['samples'][int(wildcards.sample)]['R1']
 
 
 rule filter_mirna_truseseq:
@@ -16,24 +16,29 @@ rule filter_mirna_truseseq:
     threads:
         4
     shell:
-        'atropos '
-        '-e {input.fastq} '
+        'atropos trim '
+        '-se {input.fastq} '
         '-o {output} '
         '-T {threads} '
         '{params.args} '
 
 rule filter_bioscientific:
     input:
-        rules.filter_mirna_truseseq.output
+        fastq = rules.filter_mirna_truseseq.output
     output:
         temp('data/tmp/GCF-2018-547-tmp/mirge/filtered/bioscientific/{sample}.fastq.gz')
     params:
-        '-f 4 -t 4 -m 16 -z '
+        '-f 4 -t 4 -l 17 -A'
     threads:
         4
     conda:
         'envs/filter.yaml'
+    log:
+        html = 'logs/{sample}/fastp.html',
+        json = 'logs/{sample}/fastp.json'
     shell:
-        'zcat {input.fastq} | fastx_trimmer '
-        '-o BB.fastq.gz '
+        'fastp -i {input.fastq} '
+        '-o {output} '
         '{params} ' 
+        '--json {log.json} '
+        '--html {log.html} '
