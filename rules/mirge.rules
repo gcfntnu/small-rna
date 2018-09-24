@@ -3,7 +3,7 @@ import shutil
 import os
 
 include:
-    'mirge_db.rules'
+    'mirge.db'
 include:
     'filter.rules'
 
