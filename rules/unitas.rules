@@ -1,0 +1,21 @@
+#-*- mode:snakemake -*-
+
+
+rule unitas:
+    input:
+        get_unitas_fastq
+    params:
+        org = 'homo_sapiens',
+        tmpdir = '/mnt/cargo/unitas/{sample}'
+    output:
+        'data/processed/unitas/{sample}/ncRNA_counts.html'
+    conda:
+        'envs/unitas.yaml'
+    shell:
+        """
+        perl src/unitas_1.5.3.pl -input {input.fastq} -s {params.org} - output_prefix={params.tmpdir}
+        mv {params.tmpdir/*/*} {outdir}
+        rm -rf {params.tmpdir}
+        """
+
+        

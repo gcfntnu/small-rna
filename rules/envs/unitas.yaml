@@ -1,0 +1,33 @@
+name: unitas
+channels:
+- bioconda
+- conda-forge
+- defaults
+- r
+dependencies:
+- perl-app-cpanminus=1.7044=pl526_1
+- perl-archive-extract=0.80=pl526_0
+- perl-carp=1.38=pl526_1
+- perl-constant=1.33=pl526_1
+- perl-data-dumper=2.161=pl526_2
+- perl-encode=2.88=pl526_1
+- perl-encode-locale=1.05=pl526_6
+- perl-exporter=5.72=pl526_1
+- perl-extutils-makemaker=7.34=pl526_2
+- perl-file-path=2.15=pl526_0
+- perl-file-temp=0.2304=pl526_2
+- perl-getopt-long=2.50=pl526_1
+- perl-ipc-cmd=1.02=pl526_0
+- perl-locale-maketext-simple=0.21=pl526_1
+- perl-lwp-simple=6.15=pl526h470a237_4
+- perl-module-corelist=5.20180820=pl526_0
+- perl-module-load=0.32=pl526_1
+- perl-module-load-conditional=0.68=pl526_2
+- perl-module-metadata=1.000033=pl526_0
+- perl-params-check=0.38=pl526_1
+- perl-parent=0.236=pl526_1
+- perl-version=0.9924=pl526_0
+- libgcc-ng=7.2.0=hdf63c60_3
+- perl=5.26.2=h470a237_0
+prefix: /home/flatberg/miniconda3/envs/unitas
+
