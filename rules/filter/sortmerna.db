@@ -1,0 +1,46 @@
+#-*-mode:snakemake-*-
+from os import environ
+from os.path import join
+
+WWW_SORTMERNA_GITHUB = 'https://github.com/biocore/sortmerna.git/trunk/rRNA_databases'
+SORTMERNA_TMP = os.path.join(environ.get('TMPDIR', '/tmp'), 'sortmerna')
+
+rule sortmerna_db:
+    params:
+        out = join('data', 'ext', 'sortmerna'),
+        github = WWW_SORTMERNA_GITHUB
+    output:
+        join('data', 'ext', 'sortmerna', 'silva-arc-16s-id95.fasta'),
+        join('data', 'ext', 'sortmerna', 'silva-arc-23s-id98.fasta'),
+        join('data', 'ext', 'sortmerna', 'silva-bac-16s-id90.fasta'),
+        join('data', 'ext', 'sortmerna', 'silva-bac-23s-id98.fasta'),
+        join('data', 'ext', 'sortmerna', 'silva-euk-18s-id95.fasta'),
+        join('data', 'ext', 'sortmerna', 'silva-euk-28s-id98.fasta'),
+        join('data', 'ext', 'sortmerna', 'rfam-5.8s-database-id98.fasta'),
+        join('data', 'ext', 'sortmerna', 'rfam-5s-database-id98.fasta')
+    conda:
+        'envs/sortmerna.yaml'
+    shell:
+        'svn co {params.github} {SORTMERNA_TMP} '
+        '&& '
+        'mkdir -p {params.out} '
+        '&& '
+        'mv {SORTMERNA_TMP}/*.fasta {params.out}/ '
+
+rule sortmerna_index_one:
+    input:
+        fasta = join('data', 'ext', 'sortmerna', '{db}.fasta')
+    params:
+        index = join('data', 'ext', 'sortmerna', '{db}.idx')
+    output:
+        join('data', 'ext', 'sortmerna', '{db}.idx.stats')
+    conda:
+        'envs/sortmerna.yaml'
+    shell:
+        'indexdb_rna --ref {input.fasta},{params.index}'
+
+DB = 'silva-arc-16s-id95 silva-arc-23s-id98 silva-bac-16s-id90 silva-bac-23s-id98 silva-euk-18s-id95 silva-euk-28s-id98 rfam-5.8s-database-id98 rfam-5s-database-id98'.split()
+
+rule sortmerna_all:
+    input:
+        expand(join('data', 'ext', 'sortmerna', '{db}.idx.stats'), db=DB)
