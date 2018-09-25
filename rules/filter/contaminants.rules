@@ -8,7 +8,7 @@ rule filter_univec:
         counts = 'data/processed/{sample}.contaminants.counts'
 
 def _filter_get_contaminants_clean(wildcards):
-    cal = config.get('screen_contaminants', True)
+    cal = config.get('filter_contaminants', True)
     if cal:
         return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/{sample}.clean.fastq.gz'.format(wildcards.sample)
     else:
