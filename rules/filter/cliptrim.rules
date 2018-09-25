@@ -1,0 +1,49 @@
+#-*- mode:snakemake -*-
+
+rule filter_mirna_truseseq:
+    input:
+        fastq = _filter_get_raw
+    output:
+        temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/trueseq/{sample}.fastq.gz')
+    params:
+        args = '--mirna'
+    conda:
+        'envs/filter.yaml'
+    threads:
+        4
+    shell:
+        'atropos trim '
+        '-se {input.fastq} '
+        '-o {output} '
+        '-T {threads} '
+        '{params.args} '
+
+rule filter_bioscientific:
+    input:
+        fastq = rules.filter_mirna_truseseq.output
+    output:
+        temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{sample}.fastq.gz')
+    params:
+        '-f 4 -t 4 -l 17 -A'
+    threads:
+        4
+    conda:
+        'envs/filter.yaml'
+    log:
+        html = 'logs/{sample}/fastp.html',
+        json = 'logs/{sample}/fastp.json'
+    shell:
+        'fastp -i {input.fastq} '
+        '-o {output} '
+        '{params} ' 
+        '--json {log.json} '
+        '--html {log.html} '
+
+def _filter_get_trimmed(wildcards):
+    kit = config.get('kit', 'bioscientific')
+    if kit == 'trueseq':
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/trueseq/{}.fastq.gz'.format(wildcards.sample)
+    elif kit == 'bioscientific':
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{}.fastq.gz'.format(wildcards.sample)
+    else:
+        raise ValueError('Kit argument: {} not supprted'.format(kit))

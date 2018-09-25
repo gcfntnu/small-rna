@@ -13,33 +13,32 @@ rule quickmirseq_config:
     output:
         'quickmirseq.config'
     shell:
-    """
-    echo SPECIES={params.species} >> {output}
-    echo GENOME_BOWTIE_INDEX={input.rna_db} >> {output}
-    echo GENOME_BOWTIE_INDEX={input.dna_db} >> {output}
-    echo FASTQ_DIR={input.fastq_dir} >> {output}
-    echo CPU={threads} >> {output}
-    
-    echo FASTQ_SUFFIX=fastq >> {output}
-    echo OUTPUT_FOLDER=output >> {output}
-    echo RUN_EXTENSION_EVALUATION=no >> {output}
-    echo CUTADAPT_REQUIRED=no >> {output}
-    echo REFINE_MISMATACH_READS=yes >> {output}
-    echo ZEROCOUNT_THRESHOLD=0 >> {output}
-    echo ZEROCOUNT_SAMPLE_THRESHOLD=0.60 >> {output}
-    echo AVG_READ_THRESHOLD=2 >> {output}
-    echo MIN_MIRNA_LENGTH=16 >> {output}
-    echo MAX_MIRNA_LENGTH=28 >> {output}
-    echo keepTemp=yes >> {output}
-    """    
+        """
+        echo SPECIES={params.species} >> {output}
+        echo GENOME_BOWTIE_INDEX={input.rna_db} >> {output}
+        echo GENOME_BOWTIE_INDEX={input.dna_db} >> {output}
+        echo FASTQ_DIR={input.fastq_dir} >> {output}
+        echo CPU={threads} >> {output}
+        
+        echo FASTQ_SUFFIX=fastq >> {output}
+        echo OUTPUT_FOLDER=output >> {output}
+        echo RUN_EXTENSION_EVALUATION=no >> {output}
+        echo CUTADAPT_REQUIRED=no >> {output}
+        echo REFINE_MISMATACH_READS=yes >> {output}
+        echo ZEROCOUNT_THRESHOLD=0 >> {output}
+        echo ZEROCOUNT_SAMPLE_THRESHOLD=0.60 >> {output}
+        echo AVG_READ_THRESHOLD=2 >> {output}
+        echo MIN_MIRNA_LENGTH=16 >> {output}
+        echo MAX_MIRNA_LENGTH=28 >> {output}
+        echo keepTemp=yes >> {output}
+        """    
 
 rule quickmirseq_input:
     output:
         'all_samples.txt'
         
-
 rule quickmirseq:
     conda:
         'envs/quickmirseq.yaml'
     shell:
-        'perl  $QuickMIRSeq/QuickMIRSeq.pl  allIDs.txt run.config
+        'perl  $QuickMIRSeq/QuickMIRSeq.pl  allIDs.txt run.config'

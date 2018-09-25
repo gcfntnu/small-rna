@@ -1,0 +1,18 @@
+#-*- mode:snakemake -*-
+
+include:
+    'sortmerna.db'
+
+rule filter_ribosomal:
+    input:
+        fastq = _filter_get_contaminants_clean
+    output:
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/sortmerna/{sample}.clean.fastq.gz',
+        counts = 'data/processed/{sample}.contaminants.counts'
+
+def _filter_clean_fastq(wildcards):
+    rib = config.get('screen_ribosomal', True)
+    if rib:
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/sortmerna/{sample}.clean.fastq.gz'.format(wildcards.sample)
+    else:
+        return _filter_get_contaminants_clean(wildcards)

@@ -1,0 +1,4 @@
+#-*- mode:snakemake -*-
+
+include:
+    'filter/filter.rules'

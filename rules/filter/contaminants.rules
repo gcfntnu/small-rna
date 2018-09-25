@@ -1,0 +1,15 @@
+#-*- mode:snakemake -*-
+
+rule filter_univec:
+    input:
+        fastq = _filter_get_calibrator_clean
+    output:
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/{sample}.clean.fastq.gz',
+        counts = 'data/processed/{sample}.contaminants.counts'
+
+def _filter_get_contaminants_clean(wildcards):
+    cal = config.get('screen_contaminants', True)
+    if cal:
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/{sample}.clean.fastq.gz'.format(wildcards.sample)
+    else:
+        return _filter_get_calibrator_clean(wildcards)

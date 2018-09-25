@@ -4,8 +4,6 @@ import os
 
 include:
     'mirge.db'
-include:
-    'filter.rules'
 
 
 FASTQ_FILES = expand('data/tmp/GCF-2018-547-tmp/mirge/filtered/bioscientific/{sample}.fastq.gz', sample=SAMPLES)
@@ -24,7 +22,7 @@ rule mirge_annotate:
     conda:
         'envs/mirge.yaml'
     threads:
-        24
+        8
     shell:
         'miRge2.0 annotate '
         '-s {input.fastq} '

@@ -1,0 +1,9 @@
+#-*- mode:snakemake -*-
+
+include:
+    'quant/quickmirseq.rules'
+include:
+    'quant/mirge.rules'
+include:
+    'quant/unitas.rules'
+

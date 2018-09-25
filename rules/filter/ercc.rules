@@ -1,0 +1,30 @@
+#-*-mode:snakemake-*-
+
+from snakemake.workflow import srcdir
+
+rule ercc:
+    params:
+        url = 'https://tools.thermofisher.com/content/sfs/manuals/ERCC92.zip'
+    output:
+        ercc_gtf = temp('_ERCC92.gtf'),
+        ercc_fasta = 'ERCC92.fa'
+    shell:
+        """
+        wget {params.url}
+        unzip ERCC92.zip
+        rm ERCC92.zip
+        mv ERCC92.gtf {output.ercc_gtf}
+        mv ERCC92.fa {output.ercc_fa}
+        """
+
+rule fix_ercc_gtf:
+    ## adding a biotype annotation to gtf
+    ## [optional]: renaming ERCC probes features to `gene` to get the exons counted in a gene count pipeline
+    input:
+        rules.ercc.output.ercc_gtf
+    output:
+        'ERCC92.custom.gtf'
+    params:
+        script = srcdir('scripts/fix_ercc_gtf')
+    shell:
+        '{params.script} {input} > {output}'

@@ -3,7 +3,7 @@
 
 rule unitas:
     input:
-        get_unitas_fastq
+        _filter_clean_fastq
     params:
         org = 'homo_sapiens',
         tmpdir = '/mnt/cargo/unitas/{sample}'
@@ -17,5 +17,3 @@ rule unitas:
         mv {params.tmpdir/*/*} {outdir}
         rm -rf {params.tmpdir}
         """
-
-        
