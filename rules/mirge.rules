@@ -17,7 +17,7 @@ rule mirge_annotate:
     params:
         bp = '/home/flatberg/miniconda3/envs/mirge/bin' ,
         lib = 'data/ext/mirge',
-        args = '-di -ai -gff -spikeInrm ',
+        args = '-di -ai -gff -spikeIn',
         out = 'data/processed/mirge/{org}/{db}'
     output:
         'data/processed/mirge/{org}/{db}/.done'

@@ -1,14 +1,30 @@
 #-*- mode:snakemake -*-
 
-def filter_get_fastq(wildcards):
+def _filter_get_raw(wildcards):
     return config['samples'][int(wildcards.sample)]['R1']
+
+def _filter_get_trimmed(wildcards)
+    kit = config.get('kit', 'bioscientific'):
+    if kit == 'trueseq':
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/trueseq/{}.fastq.gz'.format(wildcards.sample)
+    elif kit == 'bioscientific':
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{}.fastq.gz'.format(wildcards.sample)
+    else:
+        raise ValueError('Kit argument: {} not supprted'.format(kit))
+
+def _filter_get_spikein(wildcards):
+    spikein = config.get('spikein'):
+    if 'spikein':
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/spikein/{sample}.fastq.gz',
+    else:
+        return _filter_get_trimmed(wildcards)
 
 
 rule filter_mirna_truseseq:
     input:
-        fastq = filter_get_fastq
+        fastq = _filter_get_raw_fastq
     output:
-        temp('data/tmp/GCF-2018-547-tmp/mirge/filtered/trueseq/{sample}.fastq.gz')
+        temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/trueseq/{sample}.fastq.gz')
     params:
         args = '--mirna'
     conda:
@@ -26,7 +42,7 @@ rule filter_bioscientific:
     input:
         fastq = rules.filter_mirna_truseseq.output
     output:
-        temp('data/tmp/GCF-2018-547-tmp/mirge/filtered/bioscientific/{sample}.fastq.gz')
+        temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{sample}.fastq.gz')
     params:
         '-f 4 -t 4 -l 17 -A'
     threads:
@@ -42,3 +58,30 @@ rule filter_bioscientific:
         '{params} ' 
         '--json {log.json} '
         '--html {log.html} '
+
+rule filter_spikein:
+    input:
+        fastq = _filter_get_trimmed,
+        ref = 'data/tmp/GCF-2018-547-tmp/smallrna/spikein/calibrators.fna'
+    output:
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/spikein/{sample}.fastq.gz',
+        bam = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/spikein/{sample}.bam',
+        counts = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/spikein/{sample}.counts'
+    conda:
+        'envs/filter.yaml'
+    params:
+        args = '-D 15 -R 2 -N 1 -L 19 -i S,1,0'
+    threads:
+        2
+    log:
+        bowtie = 'logs/{sample}/filter.spikein.bowtie2.log',
+        samtools = 'logs/{sample}/filter.spikein.samtools.log',
+        error = 'logs/{sample}/filter.error'
+    shell:
+        """
+        bowtie2 -p {threads} {params.args} --un-gz {output.fastq} -x {params.calibrator_index} -U {input.fastq} 2>> {log.bowtie} | awk '$$2 != 4 {print $$0}' | samtools view -Sb - 2>> {log.samtools} | tee {output.bam} | samtools view - 2>> {log.samtools} | awk '{print $$3}' | sort -k 2 2>> {log.error} | uniq --count > {output.counts} 2>> {log.error}
+        """
+
+rule filter_univec:
+    
+    
