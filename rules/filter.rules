@@ -1,4 +1,15 @@
 #-*- mode:snakemake -*-
 
+#-*- mode:snakemake -*-
+
+def _filter_get_raw(wildcards):
+    return config['samples'][int(wildcards.sample)]['R1']
+       
 include:
-    'filter/filter.rules'
+    'filter/cliptrim.rules'
+include:
+    'filter/calibrators.rules'
+include:
+    'filter/contaminants.rules'
+include:
+    'filter/sortmerna.rules'

@@ -85,57 +85,73 @@ rule calibrators_bowtie2_build_index:
     params:
         index = 'data/ext/smallrna/calibrators/index/bowtie2/calibrators'
     conda:
-        'envs/filter.yaml'
+        'envs/calibrators.yaml'
     shell:
         'bowtie2-build {input} {params.index}'
 
 rule calibrators_filter_bowtie:
     input:
         fastq = _filter_get_trimmed,
-        index =  rules.calibrators_bowtie_build_index.output
+        index = rules.calibrators_bowtie_build_index.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrator_clean/{sample}.fastq.gz',
-        counts = 'data/processeds/{sample}.calibrators.counts'
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bowtie/{sample}.clean.fastq',
+        counts = 'data/processed/calibrators/{sample}.bowtie.counts'
     conda:
-        'envs/filter.yaml'
+        'envs/calibrators.yaml'
+    benchmark:
+        'timings/{sample}/calibrators.bowtie'
     params:
-        args = '-D 15 -R 2 -N 1 -L 19 -i S,1,0'
+        args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
+        index = rules.calibrators_bowtie_build_index.params.index
     threads:
         2
     log:
-        bowtie = 'logs/{sample}/filter.spikein.bowtie2.log',
-        samtools = 'logs/{sample}/filter.spikein.samtools.log',
+        bowtie = 'logs/{sample}/filter.calibrators.bowtie.log',
         error = 'logs/{sample}/filter.error'
     shell:
-        """
-        bowtie2 -p {threads} {params.args} --un-gz {output.fastq} -x {params.calibrator_index} -U {input.fastq} 2>> {log.bowtie} | awk '$$2 != 4 {print $$0}' | samtools view -Sb - 2>> {log.samtools} | tee {output.bam} | samtools view - 2>> {log.samtools} | awk '{print $$3}' | sort -k 2 2>> {log.error} | uniq --count > {output.counts} 2>> {log.error}
-        """
-
+        'bowtie {params.index} '
+        '{input.fastq} '
+        '--un {output.fastq} '
+        '-p {threads} '
+        '{params.args} '
+        '2>> {log.bowtie} '
+        '| samtools view -q 5 -S  - | cut -f3 | sort | uniq -c  > {output.counts} '
+        '2>> {log.error} '
+        
 rule calibrators_filter_bowtie2:
     input:
         fastq = _filter_get_trimmed,
-        ref = 'data/tmp/GCF-2018-547-tmp/smallrna/spikein/calibrators.fna'
+        index = rules.calibrators_bowtie2_build_index.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/{sample}.clean.fastq.gz',
-        counts = 'data/processed/{sample}.calibrators.counts'
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bowtie2/{sample}.clean.fastq',
+        counts = 'data/processed/calibrators/{sample}.bowtie2.counts'
     conda:
-        'envs/filter.yaml'
+        'envs/calibrators.yaml'
     params:
-        args = '-D 15 -R 2 -N 1 -L 19 -i S,1,0'
+        args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
+        index = rules.calibrators_bowtie2_build_index.params.index
     threads:
         2
+    benchmark:
+        'timings/{sample}/calibrators.bowtie2'
     log:
-        bowtie = 'logs/{sample}/filter.spikein.bowtie2.log',
-        samtools = 'logs/{sample}/filter.spikein.samtools.log',
+        bowtie = 'logs/{sample}/filter.calibrators.bowtie2.log',
         error = 'logs/{sample}/filter.error'
     shell:
-        """
-        bowtie2 -p {threads} {params.args} --un-gz {output.fastq} -x {params.calibrator_index} -U {input.fastq} 2>> {log.bowtie} | awk '$$2 != 4 {print $$0}' | samtools view -Sb - 2>> {log.samtools} | tee {output.bam} | samtools view - 2>> {log.samtools} | awk '{print $$3}' | sort -k 2 2>> {log.error} | uniq --count > {output.counts} 2>> {log.error}
-        """
+        'bowtie2 '
+        '-U {input.fastq} '
+        '--un {output.fastq} '
+        '-x {params.index} '
+        '-p {threads} '
+        '{params.args} '
+        '2>> {log.bowtie} '
+        '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
+        '2>> {log.error} '
+    
 
 def _filter_get_calibrator_clean(wildcards):
     cal = config.get('calibrators', True)
     if cal:
-        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/{sample}.clean.fastq.gz'.format(wildcards.sample)
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bowtie/{sample}.clean.fastq'.format(wildcards.sample)
     else:
         return _filter_get_trimmed(wildcards)
