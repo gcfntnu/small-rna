@@ -13,3 +13,6 @@ include:
     'filter/contaminants.rules'
 include:
     'filter/sortmerna.rules'
+
+def get_filtered_fastq(wildcards):
+    return _filter_get_trimmed(wildcards)

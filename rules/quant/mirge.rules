@@ -6,11 +6,23 @@ include:
     'mirge.db'
 
 
-FASTQ_FILES = expand('data/tmp/GCF-2018-547-tmp/mirge/filtered/bioscientific/{sample}.fastq.gz', sample=SAMPLES)
+rule mirge_symlink:
+    input:
+        get_filtered_fastq
+    params:
+        outdir = os.path.abspath('data/tmp/GCF-2018-547-tmp/mirge/fastq')
+    output:
+        os.path.join('data/tmp/GCF-2018-547-tmp/mirge/fastq', '{sample}.fastq.gz')
+    run:
+        import os
+        src = os.path.abspath(input[0])
+        dst = os.path.abspath(output[0])
+        os.symlink(src, dst)
+        print('symlinking: {} > {}'.format(src, dst))
 
 rule mirge_annotate:
     input:
-        fastq = FASTQ_FILES,
+        fastq = expand(rules.mirge_symlink.output, sample=SAMPLES),
         db = 'data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt'
     params:
         bp = '/home/flatberg/miniconda3/envs/mirge/bin' ,
