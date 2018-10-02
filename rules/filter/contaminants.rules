@@ -1,11 +1,65 @@
 #-*- mode:snakemake -*-
+"""
+http://seqanswers.com/forums/archive/index.php/t-42552.html
+Those are common contaminant microbes that we encounter in sequencing
+https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing
+bbmap.sh in=ref.fa 
+bbduk.sh -Xmx1g in=reads.fq out=clean.fq ref=phix.fasta k=31 hdist=1
+"""
 
-rule filter_univec:
+
+rule contaminants_univec_fasta:
+    params:
+        url = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec'
+    output:
+        'data/ext/contaminants/univec/fasta/univec.fa'
+    shell:
+        'wget {params.url} -O- > {output}'
+
+rule contaminants_emvec_fasta:
+    """emvec processing from centrifuge code
+    """
+    params:
+        url = 'http://ftp.ebi.ac.uk/pub/databases/emvec/emvec.dat.gz'
+    output:
+        'data/ext/contaminants/emvec/fasta/emvec.fa'
+    shell:
+        """
+        wget {params.url} -O- | gunzip -c | grep -E '^DE|^ ' | awk '/^DE/ {{ sub(/DE */,">"); gsub(/[ |]/,"_") }}; {{ print }}' | awk '/^ / {{ gsub(/ /,""); sub(/[0-9]*$/,"") }}; {{ print}}' > {output}
+        """
+
+rule contaminants_index:
     input:
-        fastq = _filter_get_calibrator_clean
+        rules.contaminants_univec_fasta.output, rules.contaminants_emvec_fasta.output
+    params:
+        index = 'data/ext/contaminants/index',
+        input = ','.join([rules.contaminants_univec_fasta.output[0], rules.contaminants_emvec_fasta.output[0]])
+    output:
+        'data/ext/contaminants/index/index.1.ebwt'
+    conda:
+        'envs/contaminants.yaml'
+    shell:
+        'bowtie-build {params.input} {params.index}'
+
+rule contaminants_index_bbmap:
+    input:
+        rules.contaminants_univec_fasta.output
+    params:
+        index = 'data/ext/contaminants/index'
+    output:
+        'data/ext/contaminants/index/ref/genome/1/info.txt'
+    conda:
+        'envs/contaminants.yaml'
+    shell:
+        'bbmap.sh ref={params.input} path={params.index}'
+
+rule contaminants_filter:
+    input:
+        fastq = 'ff'
     output:
         fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/{sample}.clean.fastq.gz',
         counts = 'data/processed/{sample}.contaminants.counts'
+
 
 def _filter_get_contaminants_clean(wildcards):
     cal = config.get('filter_contaminants', True)
