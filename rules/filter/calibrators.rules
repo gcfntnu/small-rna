@@ -147,7 +147,30 @@ rule calibrators_filter_bowtie2:
         '2>> {log.bowtie} '
         '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
-    
+
+rule calibrators_bbmap_build_index:
+    input:
+         'data/ext/smallrna/calibrators/calibrators.dna.extended.fa' if CALIBRATORS_EXTEND else 'data/ext/smallrna/calibrators/calibrators.dna.fa'
+    output:
+        'data/ext/smallrna/calibrators/index/bbmap/ref/genome/1/info.txt'
+    params:
+        index = 'data/ext/smallrna/calibrators/index/bbmap'
+    conda:
+        'envs/calibrators.yaml'
+    shell:
+        'bbmap.sh ref={input} path={params.index}'
+
+rule calibrators_filter_bbmap:
+    input:
+        fastq = _filter_get_trimmed,
+        index = rules.calibrators_bbmap_build_index.output
+    output:
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bbmap/{sample}.clean.fastq',
+        counts = 'data/processed/calibrators/{sample}.bbmap.counts'
+    conda:
+        'envs/calibrators.yaml'
+    shell:
+        'bbduk.sh in={input.fastq} outm={output.fastq} stats={output.counts} ref={input.index}'
 
 def _filter_get_calibrator_clean(wildcards):
     cal = config.get('calibrators', True)

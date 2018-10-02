@@ -9,7 +9,6 @@ dependencies:
   - bowtie
   - bowtie2
   - bzip2
-  - ca-certificates
   - certifi
   - libffi
   - libgcc-ng

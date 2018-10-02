@@ -5,8 +5,20 @@ Those are common contaminant microbes that we encounter in sequencing
 https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing
 bbmap.sh in=ref.fa 
 bbduk.sh -Xmx1g in=reads.fq out=clean.fq ref=phix.fasta k=31 hdist=1
+
+
+NOTES:
+emvec looks to be too diverse and perhaps only used when vector contamination is suspected
 """
 
+
+rule contaminants_bacterial:
+    params:
+        url = 'https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing'
+    output:
+        'data/ext/contaminants/bacterial_common_JGI/fasta/'
+    shell:
+        'wget {params.url} -O- > {output}'
 
 rule contaminants_univec_fasta:
     params:
@@ -51,8 +63,20 @@ rule contaminants_index_bbmap:
     conda:
         'envs/contaminants.yaml'
     shell:
-        'bbmap.sh ref={params.input} path={params.index}'
+        'bbmap.sh ref={input} path={params.index}'
 
+rule contaminants_filter_bbmap:
+    input:
+        fastq = _filter_get_calibrator_clean,
+        index = rules.contaminants_index_bbmap.output
+    output:
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/bbmap/{sample}.clean.fastq',
+        counts = 'data/processed/contaminants/{sample}.bbmap.counts'
+    conda:
+        'envs/calibrators.yaml'
+    shell:
+        'bbduk.sh in={input.fastq} k=14 outm={output.fastq} stats={output.counts} ref='
+        
 rule contaminants_filter:
     input:
         fastq = 'ff'

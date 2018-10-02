@@ -29,7 +29,7 @@ rule filter_bioscientific_trimmed:
     input:
         fastq = rules.filter_adapter_atropos.output.trimmed
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{sample}.1.fastq'
+        fastq = temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{sample}.1.fastq')
     params:
         '-f 4 -t 4 -A -G --low_complexity_filter'
     threads:
@@ -51,7 +51,7 @@ rule filter_bioscientific_untrimmed:
     input:
         fastq = rules.filter_adapter_atropos.output.untrimmed
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{sample}.2.fastq'
+        fastq = temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/bioscientific/{sample}.2.fastq')
     params:
         '-f 4 -A -G --low_complexity_filter'
     threads:
