@@ -1,4 +1,6 @@
-FROM ubuntu:18.04
+FROM phusion/baseimage:latest
+
+CMD ["/sbin/my_init"]
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PATH /opt/conda/bin:$PATH
@@ -6,7 +8,7 @@ ENV PATH /opt/conda/bin:$PATH
 RUN apt-get update --fix-missing && \
     apt-get install -y wget bzip2 ca-certificates curl git && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-4.4.10-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
@@ -28,4 +30,4 @@ RUN conda config --add channels r
 RUN conda config --add channels bioconda
 RUN conda config --add channels conda-forge
 
-RUN conda install -y bowtie bowtie2 fastqc fastp atropos sortmerna
+RUN conda install -y bowtie bowtie2 fastqc fastp atropos sortmerna bbmap samtools
