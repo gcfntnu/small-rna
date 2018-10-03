@@ -16,7 +16,7 @@ rule contaminants_bacterial:
     params:
         url = 'https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing'
     output:
-        'data/ext/contaminants/bacterial_common_JGI/fasta/'
+        'data/ext/contaminants/bacterial_common_JGI/fasta/fusedEPmasked2.fa'
     shell:
         'wget {params.url} -O- > {output}'
 
@@ -40,22 +40,56 @@ rule contaminants_emvec_fasta:
         wget {params.url} -O- | gunzip -c | grep -E '^DE|^ ' | awk '/^DE/ {{ sub(/DE */,">"); gsub(/[ |]/,"_") }}; {{ print }}' | awk '/^ / {{ gsub(/ /,""); sub(/[0-9]*$/,"") }}; {{ print}}' > {output}
         """
 
-rule contaminants_index:
+rule contaminants_fasta:
     input:
-        rules.contaminants_univec_fasta.output, rules.contaminants_emvec_fasta.output
+        rules.contaminants_bacterial.output, rules.contaminants_univec_fasta.output
+    output:
+        'data/ext/contaminants/fasta/contaminants.fa'
+    shell:
+        'cat {input} > {output}'
+        
+rule contaminants_index_bowtie:
+    input:
+        'data/ext/contaminants/fasta/contaminants.fa'
     params:
-        index = 'data/ext/contaminants/index',
-        input = ','.join([rules.contaminants_univec_fasta.output[0], rules.contaminants_emvec_fasta.output[0]])
+        index = 'data/ext/contaminants/index'
     output:
         'data/ext/contaminants/index/index.1.ebwt'
     conda:
         'envs/contaminants.yaml'
     shell:
         'bowtie-build {params.input} {params.index}'
+        
+rule contaminants_filter_bowtie:
+    input:
+        fastq = _filter_get_calibrator_clean,
+        index = rules.calibrators_bowtie_build_index.output
+    output:
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/contaminants.bowtie.clean.fastq',
+        counts = 'data/processed/smallrna/filtered/{sample}/contaminants.bowtie.counts'
+    conda:
+        'envs/contaminants.yaml'
+    params:
+        args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
+        index = rules.contaminants_index_bowtie.params.index
+    threads:
+        4
+    log:
+        bowtie = 'logs/{sample}/filter.contaminants.bowtie.log',
+        error = 'logs/{sample}/contaminants.error'
+    shell:
+        'bowtie {params.index} '
+        '{input.fastq} '
+        '--un {output.fastq} '
+        '-p {threads} '
+        '{params.args} '
+        '2>> {log.bowtie} '
+        '| samtools view -q 5 -S  - | cut -f3 | sort | uniq -c  > {output.counts} '
+        '2>> {log.error} '
 
 rule contaminants_index_bbmap:
     input:
-        rules.contaminants_univec_fasta.output
+        'data/ext/contaminants/fasta/contaminants.fa'
     params:
         index = 'data/ext/contaminants/index'
     output:
@@ -75,15 +109,7 @@ rule contaminants_filter_bbmap:
     conda:
         'envs/calibrators.yaml'
     shell:
-        'bbduk.sh in={input.fastq} k=14 outm={output.fastq} stats={output.counts} ref='
-        
-rule contaminants_filter:
-    input:
-        fastq = 'ff'
-    output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/{sample}.clean.fastq.gz',
-        counts = 'data/processed/{sample}.contaminants.counts'
-
+        'bbduk.sh in={input.fastq} k=14 outm={output.fastq} stats={output.counts} ref={params.index}'
 
 def _filter_get_contaminants_clean(wildcards):
     cal = config.get('filter_contaminants', True)

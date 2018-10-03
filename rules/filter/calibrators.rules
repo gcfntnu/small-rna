@@ -43,7 +43,6 @@ rule calibrators_to_dna:
         cat {input} | sed 's/U/T/g'> {output}
         """
 
-
 rule calibrators_extend:
     input:
         rules.calibrators_to_dna.output
@@ -94,8 +93,8 @@ rule calibrators_filter_bowtie:
         fastq = _filter_get_trimmed,
         index = rules.calibrators_bowtie_build_index.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bowtie/{sample}.clean.fastq',
-        counts = 'data/processed/calibrators/{sample}.bowtie.counts'
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/calibrators.bowtie.clean.fastq',
+        counts = 'data/processed/smallrna/filtered/{sample}/calibrators.bowtie.counts'
     conda:
         'envs/calibrators.yaml'
     benchmark:
@@ -123,8 +122,8 @@ rule calibrators_filter_bowtie2:
         fastq = _filter_get_trimmed,
         index = rules.calibrators_bowtie2_build_index.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bowtie2/{sample}.clean.fastq',
-        counts = 'data/processed/calibrators/{sample}.bowtie2.counts'
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/calibrators.bowtie2.clean.fastq',
+        counts = 'data/processed/smallrna/filtered/{sample}/calibrators.bowtie2.counts'
     conda:
         'envs/calibrators.yaml'
     params:
@@ -132,8 +131,6 @@ rule calibrators_filter_bowtie2:
         index = rules.calibrators_bowtie2_build_index.params.index
     threads:
         2
-    benchmark:
-        'timings/{sample}/calibrators.bowtie2'
     log:
         bowtie = 'logs/{sample}/filter.calibrators.bowtie2.log',
         error = 'logs/{sample}/filter.error'
@@ -165,8 +162,8 @@ rule calibrators_filter_bbmap:
         fastq = _filter_get_trimmed,
         index = rules.calibrators_bbmap_build_index.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bbmap/{sample}.clean.fastq',
-        counts = 'data/processed/calibrators/{sample}.bbmap.counts'
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/calibrators.bbduk.clean.fastq',
+        counts = 'data/processed/smallrna/filtered/{sample}/calibrators.bbduk.counts'
     conda:
         'envs/calibrators.yaml'
     shell:
@@ -174,7 +171,11 @@ rule calibrators_filter_bbmap:
 
 def _filter_get_calibrator_clean(wildcards):
     cal = config.get('calibrators', True)
+    if 'cal_quant' in wildcards:
+        cal_quant = wildcards.cal_quant
+    else:
+        cal_quant = config.get('calibrator_quantifier', 'bowtie')
     if cal:
-        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/calibrators/bowtie/{sample}.clean.fastq'.format(wildcards.sample)
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{}/calibrators.{}.clean.fastq'.format(wildcards.sample, qal_quant)
     else:
         return _filter_get_trimmed(wildcards)
