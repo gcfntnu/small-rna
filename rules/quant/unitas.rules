@@ -3,17 +3,19 @@
 
 rule unitas:
     input:
-        _filter_clean_fastq
+        fastq = get_filtered_fastq
     params:
         org = 'homo_sapiens',
-        tmpdir = '/mnt/cargo/unitas/{sample}'
+        tmpdir = 'data/tmp/unitas',
+        outdir = 'data/processed/smallrna/unitas/{sample}/'
     output:
         'data/processed/unitas/{sample}/ncRNA_counts.html'
-    conda:
-        'envs/unitas.yaml'
+    singularity:
+        'docker://flatberg/unitas:1.6.0'
     shell:
         """
-        perl src/unitas_1.5.3.pl -input {input.fastq} -s {params.org} - output_prefix={params.tmpdir}
-        mv {params.tmpdir/*/*} {outdir}
-        rm -rf {params.tmpdir}
+        mkdir -p {params.tmpdir}
+        cd {params.tmpdir}
+        unitas.pl -input {input.fastq} -s {params.org} - output_prefix={params.tmpdir}
+        mv {params.tmpdir}/*#1*/* {params.outdir}
         """

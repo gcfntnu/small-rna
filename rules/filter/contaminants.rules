@@ -14,59 +14,82 @@ emvec looks to be too diverse and perhaps only used when vector contamination is
 
 rule contaminants_bacterial:
     params:
-        url = 'https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing'
+        url = 'https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing',
+        file = 'data/ext/fusedEPmasked2.fa.gz'
     output:
-        'data/ext/contaminants/bacterial_common_JGI/fasta/fusedEPmasked2.fa'
+        'data/ext/smallrna/contaminants/bacterial_common_JGI/fasta/fusedEPmasked2.fa'
     shell:
-        'wget {params.url} -O- > {output}'
+        """gunzip {params.file} -c | sed 's/ /_/g' > {output}"""
 
 rule contaminants_univec_fasta:
     params:
-        url = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec'
+        url = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec',
+        url_core = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec_Core'
     output:
-        'data/ext/contaminants/univec/fasta/univec.fa'
+        'data/ext/smallrna/contaminants/univec/fasta/univec.fa'
     shell:
-        'wget {params.url} -O- > {output}'
+        'wget {params.url_core} -O- > {output}'
 
+rule contaminants_univec_anno:
+    input:
+        rules.contaminants_univec_fasta.output
+    output:
+        'data/ext/smallrna/contaminants/univec/anno.tsv'
+    shell:
+        """
+        grep '>' {input} | sed 's/ /\t/' > {output}
+        """
+    
 rule contaminants_emvec_fasta:
     """emvec processing from centrifuge code
     """
     params:
         url = 'http://ftp.ebi.ac.uk/pub/databases/emvec/emvec.dat.gz'
     output:
-        'data/ext/contaminants/emvec/fasta/emvec.fa'
+        'data/ext/smallrna/contaminants/emvec/fasta/emvec.fa'
     shell:
         """
         wget {params.url} -O- | gunzip -c | grep -E '^DE|^ ' | awk '/^DE/ {{ sub(/DE */,">"); gsub(/[ |]/,"_") }}; {{ print }}' | awk '/^ / {{ gsub(/ /,""); sub(/[0-9]*$/,"") }}; {{ print}}' > {output}
+        """
+
+rule contaminants_emvec_anno:
+    input:
+        rules.contaminants_emvec_fasta.output
+    output:
+        'data/ext/smallrna/contaminants/emvec/anno.tsv'
+    shell:
+        """
+        grep '>' {input} | sed 's/ /\t/' > {output}
         """
 
 rule contaminants_fasta:
     input:
         rules.contaminants_bacterial.output, rules.contaminants_univec_fasta.output
     output:
-        'data/ext/contaminants/fasta/contaminants.fa'
+        'data/ext/smallrna/contaminants/fasta/contaminants.fa'
     shell:
         'cat {input} > {output}'
         
 rule contaminants_index_bowtie:
     input:
-        'data/ext/contaminants/fasta/contaminants.fa'
+        'data/ext/smallrna/contaminants/fasta/contaminants.fa'
     params:
-        index = 'data/ext/contaminants/index'
+        index = 'data/ext/smallrna/contaminants/index/cont'
     output:
-        'data/ext/contaminants/index/index.1.ebwt'
+        'data/ext/smallrna/contaminants/index/cont.1.ebwt'
     conda:
         'envs/contaminants.yaml'
     shell:
-        'bowtie-build {params.input} {params.index}'
+        'bowtie-build {input} {params.index}'
         
 rule contaminants_filter_bowtie:
     input:
         fastq = _filter_get_calibrator_clean,
-        index = rules.calibrators_bowtie_build_index.output
+        index = rules.contaminants_index_bowtie.output
     output:
         fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/contaminants.bowtie.clean.fastq',
-        counts = 'data/processed/smallrna/filtered/{sample}/contaminants.bowtie.counts'
+        counts = 'data/processed/smallrna/filtered/{sample}/contaminants.bowtie.counts',
+        sam = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/contaminants.sam'
     conda:
         'envs/contaminants.yaml'
     params:
@@ -84,36 +107,31 @@ rule contaminants_filter_bowtie:
         '-p {threads} '
         '{params.args} '
         '2>> {log.bowtie} '
+        '| tee {output.sam} '
         '| samtools view -q 5 -S  - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
 
-rule contaminants_index_bbmap:
-    input:
-        'data/ext/contaminants/fasta/contaminants.fa'
-    params:
-        index = 'data/ext/contaminants/index'
-    output:
-        'data/ext/contaminants/index/ref/genome/1/info.txt'
-    conda:
-        'envs/contaminants.yaml'
-    shell:
-        'bbmap.sh ref={input} path={params.index}'
-
-rule contaminants_filter_bbmap:
+rule contaminants_filter_bbduk:
     input:
         fastq = _filter_get_calibrator_clean,
-        index = rules.contaminants_index_bbmap.output
+        ref = 'data/ext/smallrna/contaminants/fasta/contaminants.fa'
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/bbmap/{sample}.clean.fastq',
-        counts = 'data/processed/contaminants/{sample}.bbmap.counts'
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/contaminants.bbmap.clean.fastq',
+        counts = 'data/processed/smallrna/filtered/{sample}/contaminants.bbmap.counts'
+    params:
+        args = 'rcomp=f k=27'
     conda:
         'envs/calibrators.yaml'
+    log:
+        'logs/{sample}/filter.contaminants.bbduk.log'
+    threads:
+        4
     shell:
-        'bbduk.sh in={input.fastq} k=14 outm={output.fastq} stats={output.counts} ref={params.index}'
+        'bbduk.sh in={input.fastq} k=27 threads={threads} rcomp=f outm={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
 
 def _filter_get_contaminants_clean(wildcards):
     cal = config.get('filter_contaminants', True)
     if cal:
-        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/contaminants/{sample}.clean.fastq.gz'.format(wildcards.sample)
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{}/contaminants.bowtie.clean.fastq'.format(wildcards.sample)
     else:
         return _filter_get_calibrator_clean(wildcards)

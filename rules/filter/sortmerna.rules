@@ -3,16 +3,28 @@
 include:
     'sortmerna.db'
 
-rule filter_ribosomal:
+REF = [','.join(i) for i in zip( expand(join('data', 'ext', 'sortmerna', '{db}.fasta'), db=DB), expand(join('data', 'ext', 'sortmerna', '{db}.idx'), db=DB))]
+REF = ':'.join(REF)
+    
+rule rrna_sortmerna:
     input:
         fastq = _filter_get_contaminants_clean
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/sortmerna/{sample}.clean.fastq.gz',
-        counts = 'data/processed/{sample}.contaminants.counts'
-
+        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/rrna.sortmerna.clean.fastq',
+        counts = 'data/processed/smallrna/{sample}/rrna.sorterna.counts'
+    params:
+        args = '--fastx --sam ',
+        ref = REF,
+        aligned = ''
+    shell:
+        'sortmerna '
+        '--reads {input.fastq} '
+        '--ref {params.ref} '
+        '{params.args} '
+        
 def _filter_clean_fastq(wildcards):
     rib = config.get('filter_ribosomal', True)
     if rib:
-        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/sortmerna/{sample}.clean.fastq.gz'.format(wildcards.sample)
+        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/rrna.sortmerna.clean.fastq.gz'.format(wildcards.sample)
     else:
         return _filter_get_contaminants_clean(wildcards)

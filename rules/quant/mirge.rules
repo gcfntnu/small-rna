@@ -10,9 +10,9 @@ rule mirge_symlink:
     input:
         get_filtered_fastq
     params:
-        outdir = os.path.abspath('data/tmp/GCF-2018-547-tmp/mirge/fastq')
+        outdir = os.path.abspath('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq')
     output:
-        os.path.join('data/tmp/GCF-2018-547-tmp/mirge/fastq', '{sample}.fastq.gz')
+        os.path.join('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq', '{sample}.fastq.gz')
     run:
         import os
         src = os.path.abspath(input[0])
