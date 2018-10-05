@@ -49,7 +49,7 @@ RUN conda install -y bowtie \
     r-scales
 
 
-ENV QUICKMIRSEQ_URL "https://downloads.sourceforge.net/project/quickmirseq/QuickMIRSeq.tgz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fquickmirseq%2Ffiles%2Flatest%2Fdownload&ts=1538739356"
+ENV QUICKMIRSEQ_URL "https://downloads.sourceforge.net/project/quickmirseq/QuickMIRSeq.tgz"
 RUN wget --quiet $QUICKMIRSEQ_URL -O- | tar xzv -C /opt
 WORKDIR /opt/QuickMIRSeq
 RUN chmod +x -R .
@@ -60,5 +60,6 @@ RUN sed -e 's/ftp:/http:/' -e 's/release-83/release-92/' database/rat/download.c
 
 RUN grep -rl '^#!/usr/bin/perl' ./ | xargs sed -i '1s:#!/usr/bin/perl:#!/usr/bin/env perl:'
 
-ENV PATH /opt/QuickMIRSeq/:$PATH
+ENV QuickMIRSeq /opt/QuickMIRSeq
+ENV PATH $QuickMIRSeq:$PATH
 

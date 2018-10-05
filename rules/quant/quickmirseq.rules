@@ -1,10 +1,20 @@
 #-*- mode:snakemake -*-
 
 
+rule quickmirseq_species_mirna:
+    input:
+        'hairpin'
 
 rule quickmirseq_db:
-    
-
+    params:
+        db = 'data/ext/quickmirseq'
+    output:
+        'data/ext/quickmirseq/database/{species}/db_stranded_0/smallRNA.1.ebwt'
+    shell:
+        """
+        cp -r $QuickMIRSeq/database {params.db}
+        
+        """
 rule quickmirseq_config:
     params:
         species = 'human',
@@ -19,10 +29,10 @@ rule quickmirseq_config:
         echo GENOME_BOWTIE_INDEX={input.dna_db} >> {output}
         echo FASTQ_DIR={input.fastq_dir} >> {output}
         echo CPU={threads} >> {output}
-        
+        echo STRAND=1 >> {output}
         echo FASTQ_SUFFIX=fastq >> {output}
         echo OUTPUT_FOLDER=output >> {output}
-        echo RUN_EXTENSION_EVALUATION=no >> {output}
+        echo RUN_EXTENSION_EVALUATION=yes >> {output}
         echo CUTADAPT_REQUIRED=no >> {output}
         echo REFINE_MISMATACH_READS=yes >> {output}
         echo ZEROCOUNT_THRESHOLD=0 >> {output}
@@ -31,6 +41,8 @@ rule quickmirseq_config:
         echo MIN_MIRNA_LENGTH=16 >> {output}
         echo MAX_MIRNA_LENGTH=28 >> {output}
         echo keepTemp=yes >> {output}
+        echo UNIQUE_LIBRARY_ANALYSIS=yes >> {output}
+        echo OFFSET_ANALYSIS=yes >> {output}
         """    
 
 rule quickmirseq_input:
@@ -38,7 +50,9 @@ rule quickmirseq_input:
         'all_samples.txt'
         
 rule quickmirseq:
-    conda:
-        'envs/quickmirseq.yaml'
+    singularity:
+        'docker://flatberg/quickmirseq:01'
     shell:
-        'perl  $QuickMIRSeq/QuickMIRSeq.pl  allIDs.txt run.config'
+        'perl  $QuickMIRSeq/QuickMIRSeq.pl  '
+        'allIDs.txt '
+        'run.config'
