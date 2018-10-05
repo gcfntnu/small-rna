@@ -1,21 +1,23 @@
 #-*- mode:snakemake -*-
 
+import os
 
 rule unitas:
     input:
         fastq = get_filtered_fastq
     params:
         org = 'homo_sapiens',
-        tmpdir = 'data/tmp/unitas',
-        outdir = 'data/processed/smallrna/unitas/{sample}/'
+        tmpdir = 'data/tmp/GCF-2018-547-tmp/unitas',
+        outdir = os.path.abspath('data/processed/smallrna/unitas/{sample}')
     output:
-        'data/processed/unitas/{sample}/ncRNA_counts.html'
+        'data/processed/smallrna/unitas/{sample}/unitas.annotation_summary.txt'
     singularity:
         'docker://flatberg/unitas:1.6.0'
     shell:
         """
         mkdir -p {params.tmpdir}
-        cd {params.tmpdir}
-        unitas.pl -input {input.fastq} -s {params.org} - output_prefix={params.tmpdir}
-        mv {params.tmpdir}/*#1*/* {params.outdir}
+        cd {params.tmpdir} || exit
+        rm -rf *_#*
+        unitas.pl -input /mnt/work/projects/GCF-2018-547/analysis/{input.fastq} -s {params.org}
+        mv UNITAS*_#1/* {params.outdir}/
         """
