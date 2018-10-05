@@ -1,6 +1,6 @@
 FROM phusion/baseimage:latest
 
-CMD ["/sbin/my_init"]
+#CMD ["/sbin/my_init"]
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
@@ -9,17 +9,12 @@ RUN apt-get update --fix-missing && \
     sed \
     wget \
     unzip \
-    bzip2 \
-    perl \
-    libarchive-extract-perl \
-    cpanminus \
-    build-essential \
-    gcc-multilib \
-    dos2unix
+    bzip2 
     
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+ENV PATH /opt/conda/bin:$PATH
 RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-4.4.10-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh && \
@@ -41,22 +36,29 @@ RUN conda config --add channels bioconda
 RUN conda config --add channels conda-forge
 
 RUN conda update -y --all
-RUN conda install -y bowtie cutadapt r-reshape2 r-ggplot2 r-latticeExtra r-scales
+RUN conda install -y bowtie \
+    cutadapt \
+    perl-compress-raw-zlib \
+    perl-config-simple \
+    perl-mime-base64 \
+    perl-parallel-forkmanager \
+    perl-xsloader \
+    r-reshape2 \
+    r-ggplot2 \
+    r-latticeExtra \
+    r-scales
 
-RUN cpanm install Config::Simple \
-    Parallel::ForkManager
-    Compress::Zlib
-    MIME::Base64
 
-
-ENV QUICKMIRSEQ_URL "https://downloads.sourceforge.net/project/quickmirseq/QuickMIRSeq.tgz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fquickmirseq%2Ffiles%2Flatest%2Fdownload&ts=1538739356
+ENV QUICKMIRSEQ_URL "https://downloads.sourceforge.net/project/quickmirseq/QuickMIRSeq.tgz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fquickmirseq%2Ffiles%2Flatest%2Fdownload&ts=1538739356"
 RUN wget --quiet $QUICKMIRSEQ_URL -O- | tar xzv -C /opt
 WORKDIR /opt/QuickMIRSeq
-RUN chmod +x -R 
+RUN chmod +x -R .
 RUN cp merge-tRNA.pl merge_tRNA.pl
 RUN sed -e 's/ftp:/http:/' -e 's/release-83/release-92/' database/mouse/download.config > database/mouse/download.config
 RUN sed -e 's/ftp:/http:/' -e 's/release-83/release-92/' database/human/download.config > database/human/download.config
 RUN sed -e 's/ftp:/http:/' -e 's/release-83/release-92/' database/rat/download.config > database/rat/download.config
+
+RUN grep -rl '^#!/usr/bin/perl' ./ | xargs sed -i '1s:#!/usr/bin/perl:#!/usr/bin/env perl:'
 
 ENV PATH /opt/QuickMIRSeq/:$PATH
 
