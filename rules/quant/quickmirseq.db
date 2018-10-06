@@ -1,0 +1,97 @@
+#-*- mode:snakemake -*-
+
+import os
+
+include:
+    'mirbase.db'
+include:
+    'gtrnadb.db'
+include:
+    'ensembl.db'
+
+rule quickmirseq_mirbase_index:
+    input:
+        mature = rules.mirbase_mature_fasta.output,
+        hairpin = rules.mirbase_hairpin_fasta.output
+    params:
+        index = 'data/ext/quickmirseq/{org}',
+        args = '--cutoff 0 --library stranded --extension5 4 --extension3 5'
+    singularity:
+        'docker://flatberg/quickmirseq:01'    
+    output:
+        'data/ext/quickmirseq/{org}/hairpin.bowtie.log'
+    shell:
+        'perl $QuickMIRSeq/QuickMIRSeq-build.pl '
+        '--target {params.index} '
+        '--mirna {input.mature} '
+        '--hairpin {input.hairpin} '
+        '{params.args} '
+
+rule quickmirseq_smallrna_index:
+    input:
+        trna = rules.gtrnadb_trna.output,
+        non_coding = rules.emsembl_noncoding_reference.output
+    params:
+        index = 'data/ext/quickmirseq/{org}'
+    output:
+        'data/ext/quickmirseq/{org}/smallRNA.fa',
+        'data/ext/quickmirseq/{org}/smallRNA.1.ebwt',
+        'data/ext/quickmirseq/{org}/smallRNA.2.ebwt',
+        'data/ext/quickmirseq/{org}/smallRNA.3.ebwt',
+        'data/ext/quickmirseq/{org}/smallRNA.4.ebwt',
+        'data/ext/quickmirseq/{org}/smallRNA.rev.1.ebwt',
+        'data/ext/quickmirseq/{org}/smallRNA.rev.2.ebwt',
+    singularity:
+        'docker://flatberg/quickmirseq:01'  
+    shell:
+        # merge creates a fasta file one entry per biotype 
+        """
+        perl $QuickMIRSeq/merge_tRNA.pl {input.trna} > {output[0]}
+        perl $QuickMIRSeq/merge_smallRNA.pl {input.non_coding} >> {output[0]}
+        bowtie-build {output[0]} {params.index}/smallRNA
+        """
+
+rule quickmirseq_mrna_index:
+    input:
+        genome = rules.emsembl_cdna_reference.output
+    params:
+        index = 'data/ext/quickmirseq/{org}'
+    output:
+        'data/ext/quickmirseq/{org}/mrna.1.ebwt',
+        'data/ext/quickmirseq/{org}/mrna.2.ebwt',
+        'data/ext/quickmirseq/{org}/mrna.3.ebwt',
+        'data/ext/quickmirseq/{org}/mrna.4.ebwt',
+        'data/ext/quickmirseq/{org}/mrna.rev.1.ebwt',
+        'data/ext/quickmirseq/{org}/mrna.rev.2.ebwt'
+    singularity:
+        'docker://flatberg/quickmirseq:01' 
+    shell:
+        'bowtie-build {input.genome} {params.index}/mrna'
+        
+rule quickmirseq_genome_index:
+    input:
+        genome = rules.emsembl_noncoding_reference.output
+    params:
+        index_base = 'data/ext/quickmirseq/{org}/genome'
+    output:
+        'data/ext/quickmirseq/{org}/genome.1.ebwt',
+        'data/ext/quickmirseq/{org}/genome.2.ebwt',
+        'data/ext/quickmirseq/{org}/genome.3.ebwt',
+        'data/ext/quickmirseq/{org}/genome.4.ebwt',
+        'data/ext/quickmirseq/{org}/genome.rev.1.ebwt',
+        'data/ext/quickmirseq/{org}/genome.rev.2.ebwt'
+    singularity:
+        'docker://flatberg/quickmirseq:01' 
+    shell:
+        'bowtie-build {input.genome} {params.index_base}'
+
+rule quickmirseq_human:
+    input:
+        expand(rules.quickmirseq_mirbase_index.output, org='homo_sapiens'),
+        expand(rules.quickmirseq_smallrna_index.output, org='homo_sapiens'),
+        expand(rules.quickmirseq_mrna_index.output, org='homo_sapiens'),
+        expand(rules.quickmirseq_genome_index.output, org='homo_sapiens')
+    params:
+        dir='data/ext/quickmirseq/homo_sapiens'
+    output:
+        touch('data/ext/quickmirseq/homo_sapiens/.done')

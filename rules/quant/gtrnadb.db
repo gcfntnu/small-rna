@@ -1,0 +1,37 @@
+#-*- mode:snakemake -*-
+
+GTRNADB_VER = {'homo_sapiens': '19',
+               'human': '19',
+               'mus_musculus': '10',
+               'mouse': '10',
+               'rattus_norvegicus': '5',
+               'rat': '5'}
+GTRNADB_ORG = {'homo_sapiens': 'hg',
+               'human': 'hg',
+               'mus_musculus': 'mm',
+               'mouse': 'mm',
+               'rattus_norvegicus': 'rn',
+               'rat': 'rn'}
+GTRNADB_NAME = {'homo_sapiens': 'Hsapi',
+                'human': 'Hsapi',
+                'mus_musculus': 'Mmusc',
+                'mouse': 'Mmusc',
+                'rattus_norvegicus': 'Rnorv',
+                'rat': 'Rnorv'}
+
+def gtrnadb_url(wildcards):
+    org = GTRNADB_ORG[wildcards.org]
+    name = GTRNADB_NAME[wildcards.org]
+    ver = GTRNADB_VER[wildcards.org]
+    url = 'http://gtrnadb.ucsc.edu/genomes/eukaryota/{}{}/{}{}-tRNAs.fa'.format(name, ver, org, ver)
+    return url
+
+rule gtrnadb_trna:
+    params:
+        url = gtrnadb_url
+    output:
+        'data/ext/gtrnadb/{org}/tRNAs.fa'
+    log:
+        'logs/gtrnadb.{org}.log'
+    shell:
+        'wget -O {output} {params.url} 2> {log}'

@@ -1,36 +1,28 @@
 #-*- mode:snakemake -*-
+from os.path import dirname
 
-
-rule quickmirseq_species_mirna:
-    input:
-        'hairpin'
-
-rule quickmirseq_db:
-    params:
-        db = 'data/ext/quickmirseq'
-    output:
-        'data/ext/quickmirseq/database/{species}/db_stranded_0/smallRNA.1.ebwt'
-    shell:
-        """
-        cp -r $QuickMIRSeq/database {params.db}
-        
-        """
+include:
+    'quickmirseq.db'
+    
 rule quickmirseq_config:
     params:
+        fastq_dir = 'data/tmp/GCF',
         species = 'human',
-        rna_db = '/database/human/db_stranded_0',
-        dna_db = '/database/human/genome'
+        rna_db = 'data/ext/quickmirseq/databases/homo_sapiens',
+        dna_bowtie_index = 'data/ext/quickmirseq/homo_sapiens/genome/'
+    threads:
+        8
     output:
         'quickmirseq.config'
     shell:
         """
         echo SPECIES={params.species} >> {output}
-        echo GENOME_BOWTIE_INDEX={input.rna_db} >> {output}
-        echo GENOME_BOWTIE_INDEX={input.dna_db} >> {output}
-        echo FASTQ_DIR={input.fastq_dir} >> {output}
+        echo RNA_BOWTIE_INDEX={params.rna_db} >> {output}
+        echo GENOME_BOWTIE_INDEX={params.dna_db} >> {output}
+        echo FASTQ_DIR={params.fastq_dir} >> {output}
         echo CPU={threads} >> {output}
         echo STRAND=1 >> {output}
-        echo FASTQ_SUFFIX=fastq >> {output}
+        echo FASTQ_SUFFIX=data/processed/quickmirseq/test >> {output}
         echo OUTPUT_FOLDER=output >> {output}
         echo RUN_EXTENSION_EVALUATION=yes >> {output}
         echo CUTADAPT_REQUIRED=no >> {output}
