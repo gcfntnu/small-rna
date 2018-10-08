@@ -127,7 +127,7 @@ rule contaminants_filter_bbduk:
     threads:
         4
     shell:
-        'bbduk.sh in={input.fastq} k=27 threads={threads} rcomp=f outm={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
+        'bbduk.sh in={input.fastq} overwrite=true k=27 threads={threads} rcomp=f outu={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
 
 def _filter_get_contaminants_clean(wildcards):
     cal = config.get('filter_contaminants', True)

@@ -171,7 +171,7 @@ rule calibrators_filter_bbduk:
     log:
         'logs/{sample}/filter.calibrators.bbduk.log'
     shell:
-        'bbduk.sh in={input.fastq} outm={output.fastq} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
+        'bbduk.sh in={input.fastq} overwrite=true outu={output.fastq} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
 
 def _filter_get_calibrator_clean(wildcards):
     cal = config.get('calibrators', True)

@@ -5,6 +5,15 @@ import os
 include:
     'mirge.db'
 
+MIRGE_ORG = {'homo_sapiens': 'human',
+           'human': 'human',
+           'human': 'human',
+           'mus_musculus': 'mouse',
+           'mouse': 'mouse',
+           'mouse': 'mouse',
+           'rattus_norvegicus': 'rat',
+           'rat': 'rat',
+           'rat': 'rat'}
 
 rule mirge_symlink:
     input:
@@ -12,7 +21,7 @@ rule mirge_symlink:
     params:
         outdir = os.path.abspath('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq')
     output:
-        os.path.join('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq', '{sample}.fastq.gz')
+        os.path.join('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq', '{sample}.fastq.')
     run:
         import os
         src = os.path.abspath(input[0])
@@ -23,16 +32,17 @@ rule mirge_symlink:
 rule mirge_annotate:
     input:
         fastq = expand(rules.mirge_symlink.output, sample=SAMPLES),
-        db = 'data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt'
+        db = lambda wildcards: 'data/ext/mirge/{}/index.Libs/{}_snorna.3.ebwt'.format(MIRGE_ORG[wildcards.org], MIRGE_ORG[wildcards.org])
     params:
-        bp = '/home/flatberg/miniconda3/envs/mirge/bin' ,
+        bp = '/opt/conda/bin', #fixme
         lib = 'data/ext/mirge',
-        args = '-di -ai -gff -spikeIn',
+        org = lambda wildcards: MIRGE_ORG[wildcards.org],
+        args = '-di -ai -gff ',
         out = 'data/processed/mirge/{org}/{db}'
     output:
         'data/processed/mirge/{org}/{db}/.done'
-    conda:
-        'envs/mirge.yaml'
+    singularity:
+        'docker://flatberg/mirge:2.0.6'
     threads:
         8
     shell:
@@ -41,7 +51,7 @@ rule mirge_annotate:
         '-d {wildcards.db} '
         '-pb {params.bp} '
         '-lib {params.lib} '
-        '-sp {wildcards.org} '
+        '-sp {params.org} '
         '{params.args} '
         '-cpu {threads} '
         '-o {params.out} '
