@@ -21,7 +21,7 @@ rule mirge_symlink:
     params:
         outdir = os.path.abspath('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq')
     output:
-        os.path.join('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq', '{sample}.fastq.')
+        os.path.join('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq', '{sample}.fastq')
     run:
         import os
         src = os.path.abspath(input[0])
@@ -34,7 +34,7 @@ rule mirge_annotate:
         fastq = expand(rules.mirge_symlink.output, sample=SAMPLES),
         db = lambda wildcards: 'data/ext/mirge/{}/index.Libs/{}_snorna.3.ebwt'.format(MIRGE_ORG[wildcards.org], MIRGE_ORG[wildcards.org])
     params:
-        bp = '/opt/conda/bin', #fixme
+        bp = '/home/flatberg/miniconda3/envs/mirge/bin',
         lib = 'data/ext/mirge',
         org = lambda wildcards: MIRGE_ORG[wildcards.org],
         args = '-di -ai -gff ',
@@ -43,6 +43,8 @@ rule mirge_annotate:
         'data/processed/mirge/{org}/{db}/.done'
     singularity:
         'docker://flatberg/mirge:2.0.6'
+    conda:
+        'envs/mirge.yaml'
     threads:
         8
     shell:

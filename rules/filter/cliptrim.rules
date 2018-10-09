@@ -1,4 +1,5 @@
 #-*- mode:snakemake -*-
+from os.path import join
 
 ADAPTER = config.get('adapter', 'TGGAATTCTCGG')
 
@@ -6,8 +7,8 @@ rule filter_adapter_atropos:
     input:
         fastq = _filter_get_raw
     output:
-        trimmed = temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/trimmed.atropos.fastq'),
-        untrimmed = temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/untrimmed.atropos.fastq')
+        trimmed = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.atropos.fastq')),
+        untrimmed = temp(join(FILTER_INTERIM, '{sample}', '{sample}.untrimmed.atropos.fastq'))
     params:
         args = '--mirna'
     singularity:
@@ -29,7 +30,7 @@ rule filter_bioscientific_trimmed:
     input:
         fastq = rules.filter_adapter_atropos.output.trimmed
     output:
-        fastq = temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/trimmed.bioscientific.1.fastq')
+        fastq = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.1.fastq'))
     params:
         '-f 4 -t 4 -A -G --low_complexity_filter'
     threads:
@@ -51,7 +52,7 @@ rule filter_bioscientific_untrimmed:
     input:
         fastq = rules.filter_adapter_atropos.output.untrimmed
     output:
-        fastq = temp('data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/trimmed.bioscientific.2.fastq')
+        fastq = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.2.fastq'))
     params:
         '-f 4 -A -G --low_complexity_filter'
     threads:
@@ -74,15 +75,15 @@ rule filter_bioscientific:
         rules.filter_bioscientific_trimmed.output.fastq,
         rules.filter_bioscientific_untrimmed.output.fastq
     output:
-        'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/trimmed.bioscientific.fastq.gz'
+        join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.fastq')
     shell:
-        'cat {input} | gzip > {output}'
+        'cat {input} > {output}'
 
-rule filter_trueseq:
+rule filter_truseq:
     input:
         rules.filter_adapter_atropos.output
     output:
-        'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/trimmed.trueseq.fastq.gz'
+        join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.truseq.fastq')
     params:
         '-A -G --low_complexity_filter'
     threads:
@@ -90,7 +91,7 @@ rule filter_trueseq:
     conda:
         'envs/filter.yaml'
     log:
-        html = 'logs/{sample}/fastp.html',
+        html = 'logs/{sample}/fastp.truseq.html',
         json = 'logs/{sample}/fastp.json'
     shell:
         'cat {input} | fastp --stdin '
@@ -100,12 +101,12 @@ rule filter_trueseq:
         '--html {log.html} '
 
 def _filter_get_trimmed(wildcards):
-    if not config.get('trim', True):
+    if not config.get('filter_trim', True):
         return _filter_get_raw(wildcards)
     if 'kit' in wildcards:
         kit = wildcards.kit
     else:
         kit = config.get('kit', 'bioscientific')
-    if kit not in ['trueseq', 'bioscientific']:
+    if kit not in ['truseq', 'bioscientific']:
         raise ValueError('Kit argument: {} not supprted'.format(kit))
-    return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{}/trimmed.{}.fastq.gz'.format(wildcards.sample, kit)
+    return join(FILTER_INTERIM, wildcards.sample, '{}.trimmed.{}.fastq'.format(wildcards.sample, kit))

@@ -1,33 +1,35 @@
 #-*-mode:snakemake-*-
 
+from os.path import join
 from snakemake.workflow import srcdir
 
 CALIBRATORS_EXTEND = config.get('calibrators_extend', False)
+CAL_DIR = join(EXT_DIR, 'smallrna', 'calibrators')
     
 rule calibrators_fasta:
     output:
-        'data/ext/smallrna/calibrators/calibrators.fa'
+        join(CAL_DIR, 'calibrators.fa')
     shell:
         """
-        echo ">Cal01 spikeIn 01" >> {output}
+        echo ">spikeIn|Cal01 spikeIn 01" >> {output}
         echo GUCCCACUCCGUAGAUCUGUUC >> {output}
-        echo ">Cal02 spikeIn 2" >> {output}
+        echo ">spikeIn|Cal02 spikeIn 2" >> {output}
         echo GAUGUAACGAGUUGGAAUGCAA >> {output}
-        echo ">Cal03 spikeIn 3" >> {output}
+        echo ">spikeIn|Cal03 spikeIn 3" >> {output}
         echo UAGCAUAUCGAGCCUGAGAACA >> {output}
-        echo ">Cal04 spikeIn 4" >> {output}
+        echo ">spikeIn|Cal04 spikeIn 4" >> {output}
         echo CAUCGGUCGAACUUAUGUGAAA >> {output}
-        echo ">Cal05 spikeIn 5" >> {output}
+        echo ">spikeIn|Cal05 spikeIn 5" >> {output}
         echo GAAGCACAUUCGCACAUCAUAU >> {output}
-        echo ">Cal06 spikeIn 6" >> {output}
+        echo ">spikeIn|Cal06 spikeIn 6" >> {output}
         echo UCUUAACCCGGACCAGAAACUA >> {output}
-        echo ">Cal07 spikeIn 7" >> {output}
+        echo ">spikeIn|Cal07 spikeIn 7" >> {output}
         echo AGGUUCCGGAUAAGUAAGAGCC >> {output}
-        echo ">Cal08 spikeIn 8" >> {output}
+        echo ">spikeIn|Cal08 spikeIn 8" >> {output}
         echo UAACUCCUUAAGCGAAUCUCGC >> {output}
-        echo ">Cal09 spikeIn 9" >> {output}
+        echo ">spikeIn|Cal09 spikeIn 9" >> {output}
         echo AAAGUAGCAUCCGAAAUACGGA >> {output}
-        echo ">Cal10 spikeIn 10" >> {output}
+        echo ">spikeIn|Cal10 spikeIn 10" >> {output}
         echo UGAUACGGAUGUUAUACGCAGC >> {output}
         """
 
@@ -35,7 +37,7 @@ rule calibrators_to_dna:
     input:
         rules.calibrators_fasta.output
     output:
-        'data/ext/smallrna/calibrators/calibrators.dna.fa'
+        join(CAL_DIR, 'calibrators.dna.fa')
     message:
         'Converting RNA alphabet to DNA for calibrators'
     shell:
@@ -47,7 +49,7 @@ rule calibrators_extend:
     input:
         rules.calibrators_to_dna.output
     output:
-        'data/ext/smallrna/calibrators/calibrators.dna.extended.fa'
+        join(CAL_DIR, 'calibrators.dna.extended.fa')
     params:
         script = srcdir('scripts/extend_calibrators.py')
     shell:
@@ -56,16 +58,16 @@ rule calibrators_extend:
 
 rule calibrators_bowtie_build_index:
     input:
-        'data/ext/smallrna/calibrators/calibrators.dna.extended.fa' if CALIBRATORS_EXTEND else 'data/ext/smallrna/calibrators/calibrators.dna.fa'
+        rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
     output:
-        'data/ext/smallrna/calibrators/index/bowtie/calibrators.1.ebwt',
-        'data/ext/smallrna/calibrators/index/bowtie/calibrators.2.ebwt',
-        'data/ext/smallrna/calibrators/index/bowtie/calibrators.3.ebwt',
-        'data/ext/smallrna/calibrators/index/bowtie/calibrators.4.ebwt',
-        'data/ext/smallrna/calibrators/index/bowtie/calibrators.rev.1.ebwt',
-        'data/ext/smallrna/calibrators/index/bowtie/calibrators.rev.2.ebwt'
+        join(CAL_DIR, 'index', 'bowtie', 'calibrators.1.ebwt'),
+        join(CAL_DIR, 'index', 'bowtie', 'calibrators.2.ebwt'),
+        join(CAL_DIR, 'index', 'bowtie', 'calibrators.3.ebwt'),
+        join(CAL_DIR, 'index', 'bowtie', 'calibrators.4.ebwt'),
+        join(CAL_DIR, 'index', 'bowtie', 'calibrators.rev.1.ebwt'),
+        join(CAL_DIR, 'index', 'bowtie', 'calibrators.rev.2.ebwt')
     params:
-        index = 'data/ext/smallrna/calibrators/index/bowtie/calibrators'
+        index = join(CAL_DIR, 'index', 'bowtie', 'calibrators')
     conda:
         'envs/calibrators.yaml'
     shell:
@@ -73,16 +75,16 @@ rule calibrators_bowtie_build_index:
 
 rule calibrators_bowtie2_build_index:
     input:
-        'data/ext/smallrna/calibrators/calibrators.dna.extended.fa' if CALIBRATORS_EXTEND else 'data/ext/smallrna/calibrators/calibrators.dna.fa'
+        rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
     output:
-        'data/ext/smallrna/calibrators/index/bowtie2/calibrators.1.bt2',
-        'data/ext/smallrna/calibrators/index/bowtie2/calibrators.2.bt2',
-        'data/ext/smallrna/calibrators/index/bowtie2/calibrators.3.bt2',
-        'data/ext/smallrna/calibrators/index/bowtie2/calibrators.4.bt2',
-        'data/ext/smallrna/calibrators/index/bowtie2/calibrators.rev.1.bt2',
-        'data/ext/smallrna/calibrators/index/bowtie2/calibrators.rev.2.bt2'
+        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.1.bt2'),
+        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.2.bt2'),
+        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.3.bt2'),
+        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.4.bt2'),
+        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.rev.1.bt2'),
+        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.rev.2.bt2')
     params:
-        index = 'data/ext/smallrna/calibrators/index/bowtie2/calibrators'
+        index = join(CAL_DIR, 'index', 'bowtie2', 'calibrators')
     conda:
         'envs/calibrators.yaml'
     shell:
@@ -93,12 +95,10 @@ rule calibrators_filter_bowtie:
         fastq = _filter_get_trimmed,
         index = rules.calibrators_bowtie_build_index.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/calibrators.bowtie.clean.fastq',
-        counts = 'data/processed/smallrna/filtered/{sample}/calibrators.bowtie.counts'
+        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.calibrators.bowtie.clean.fastq'),
+        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bowtie.counts')
     conda:
         'envs/calibrators.yaml'
-    benchmark:
-        'timings/{sample}/calibrators.bowtie'
     params:
         args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
         index = rules.calibrators_bowtie_build_index.params.index
@@ -122,8 +122,8 @@ rule calibrators_filter_bowtie2:
         fastq = _filter_get_trimmed,
         index = rules.calibrators_bowtie2_build_index.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/calibrators.bowtie2.clean.fastq',
-        counts = 'data/processed/smallrna/filtered/{sample}/calibrators.bowtie2.counts'
+        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.calibrators.bowtie2.clean.fastq'),
+        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bowtie2.counts')
     conda:
         'envs/calibrators.yaml'
     params:
@@ -147,11 +147,11 @@ rule calibrators_filter_bowtie2:
 
 rule calibrators_bbmap_build_index:
     input:
-         'data/ext/smallrna/calibrators/calibrators.dna.extended.fa' if CALIBRATORS_EXTEND else 'data/ext/smallrna/calibrators/calibrators.dna.fa'
+         rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
     output:
-        'data/ext/smallrna/calibrators/index/bbmap/ref/genome/1/info.txt'
+        join(CAL_DIR, 'index', 'bbmap', 'ref', 'genome', '1', 'info.txt')
     params:
-        index = 'data/ext/smallrna/calibrators/index/bbmap'
+        index = join(CAL_DIR, 'index', 'bbmap')
     conda:
         'envs/calibrators.yaml'
     shell:
@@ -160,10 +160,10 @@ rule calibrators_bbmap_build_index:
 rule calibrators_filter_bbduk:
     input:
         fastq = _filter_get_trimmed,
-        ref = 'data/ext/smallrna/calibrators/calibrators.dna.extended.fa' if CALIBRATORS_EXTEND else 'data/ext/smallrna/calibrators/calibrators.dna.fa'
+        ref = rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/calibrators.bbduk.clean.fastq',
-        counts = 'data/processed/smallrna/filtered/{sample}/calibrators.bbduk.counts'
+        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.calibrators.bbduk.clean.fastq'),
+        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bbduk.counts')
     conda:
         'envs/calibrators.yaml'
     threads:
@@ -174,9 +174,14 @@ rule calibrators_filter_bbduk:
         'bbduk.sh in={input.fastq} overwrite=true outu={output.fastq} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
 
 def _filter_get_calibrator_clean(wildcards):
-    cal = config.get('calibrators', True)
-    A = config.get('calibrator_quantifier', 'bowtie')
+    cal = config.get('filter_calibrators', True)
+    cal_quant = config.get('calibrator_quantifier', 'bowtie')
     if cal:
-        return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{}/calibrators.{}.clean.fastq'.format(wildcards.sample, A)
-    else:
-        return _filter_get_trimmed(wildcards)
+        if cal_quant in ['bowtie', 'bbduk']:
+            return join(FILTER_INTERIM, wildcards.sample, '{}.calibrators.{}.clean.fastq'.format(wildcards.sample, cal_quant))
+        elif cal_quant == 'unitas':
+            assert(config.get('quant') == 'unitas')
+            return _filter_get_trimmed(wildcards)
+        else:
+            raise ValueError('calibrator quantifier option not valid: {}'.format(cal_quant))
+    return _filter_get_trimmed(wildcards)

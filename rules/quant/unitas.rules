@@ -8,16 +8,19 @@ rule unitas:
     params:
         org = 'homo_sapiens',
         tmpdir = 'data/tmp/GCF-2018-547-tmp/unitas',
-        outdir = os.path.abspath('data/processed/smallrna/unitas/{sample}')
+        outdir = os.path.abspath('data/processed/smallrna/unitas/{sample}'),
+        args = '-riborase -tail 3'
     output:
         'data/processed/smallrna/unitas/{sample}/unitas.annotation_summary.txt'
     singularity:
         'docker://flatberg/unitas:1.6.0'
+    threads:
+        12
     shell:
         """
         mkdir -p {params.tmpdir}
         cd {params.tmpdir} || exit
         rm -rf *_#*
-        unitas.pl -input /mnt/work/projects/GCF-2018-547/analysis/{input.fastq} -s {params.org}
-        mv UNITAS*_#1/* {params.outdir}/
+        unitas.pl -input {input.fastq} -s {params.org} -threads {threads} {params.args}
+        mv UNITAS_*_{wildcards.sample}.*fastq_#1/* {params.outdir}/
         """
