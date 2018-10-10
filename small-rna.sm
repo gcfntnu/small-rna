@@ -11,7 +11,7 @@ Authors:
 Arnar Flatberg / flatberg <arnar.flatberg@gmail.com>
 """
 
-from os.path import join, abspath
+from os.path import join, abspath, dirname
 from os import makedirs, environ
 import sys
 import yaml
@@ -41,3 +41,25 @@ include:
     'rules/filter.rules'
 include:
     'rules/quant.rules'
+
+
+onsuccess:
+    # write config
+    from datetime import datetime
+    import copy
+    import yaml
+    
+    dt = datetime.now()
+    final_conf_fn = 'small-rna_{}_{}_{}.success.config'.format(dt.year, dt.month, dt.day)
+    if os.path.exists(final_conf_fn):
+        base_fn = copy.copy(final_conf_fn)
+        for i in range(999):
+            final_conf_fn = 'small-rna_{}_{}_{}_#{}.success.config'.format(dt.year, dt.month, dt.day, i)
+            if not os.path.exists(final_conf_fn):
+                break
+    if os.path.exists(final_conf_fn):
+        raise ValueError('this is just too many runs on the same day')
+    config_path = dirname(srcdir('small-rna.config'))
+    final_conf_fn = join(config_path,  final_conf_fn)
+    with open(final_conf_fn) as fh:
+        yaml.dump(config, final_conf_fn, default_flow_style=False)
