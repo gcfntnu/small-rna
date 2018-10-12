@@ -1,6 +1,7 @@
 #-*- mode:snakemake -*-
 
 import os
+from os.path import join
 
 include:
     'mirbase.db'
@@ -14,12 +15,12 @@ rule quickmirseq_mirbase_index:
         mature = rules.mirbase_mature_fasta.output,
         hairpin = rules.mirbase_hairpin_fasta.output
     params:
-        index = 'data/ext/quickmirseq/{org}',
+        index = join(EXT_DIR, 'quickmirseq', '{org}'),
         args = '--cutoff 0 --library stranded --extension5 4 --extension3 5'
     singularity:
         'docker://flatberg/quickmirseq:01'    
     output:
-        'data/ext/quickmirseq/{org}/hairpin.bowtie.log'
+        join(EXT_DIR, 'quickmirseq', '{org}', 'hairpin.bowtie.log')
     shell:
         'perl $QuickMIRSeq/QuickMIRSeq-build.pl '
         '--target {params.index} '
@@ -32,15 +33,15 @@ rule quickmirseq_smallrna_index:
         trna = rules.gtrnadb_trna.output,
         non_coding = rules.emsembl_noncoding_reference.output
     params:
-        index = 'data/ext/quickmirseq/{org}'
+        index = join(EXT_DIR, 'quickmirseq', '{org}')
     output:
-        'data/ext/quickmirseq/{org}/smallRNA.fa',
-        'data/ext/quickmirseq/{org}/smallRNA.1.ebwt',
-        'data/ext/quickmirseq/{org}/smallRNA.2.ebwt',
-        'data/ext/quickmirseq/{org}/smallRNA.3.ebwt',
-        'data/ext/quickmirseq/{org}/smallRNA.4.ebwt',
-        'data/ext/quickmirseq/{org}/smallRNA.rev.1.ebwt',
-        'data/ext/quickmirseq/{org}/smallRNA.rev.2.ebwt',
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.fa'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.1.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.2.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.3.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.4.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.rev.1.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.rev.2.ebwt')
     singularity:
         'docker://flatberg/quickmirseq:01'  
     shell:
@@ -55,14 +56,15 @@ rule quickmirseq_mrna_index:
     input:
         genome = rules.emsembl_cdna_reference.output
     params:
-        index = 'data/ext/quickmirseq/{org}'
+        index = join(EXT_DIR, 'quickmirseq', '{org}')
     output:
-        'data/ext/quickmirseq/{org}/mrna.1.ebwt',
-        'data/ext/quickmirseq/{org}/mrna.2.ebwt',
-        'data/ext/quickmirseq/{org}/mrna.3.ebwt',
-        'data/ext/quickmirseq/{org}/mrna.4.ebwt',
-        'data/ext/quickmirseq/{org}/mrna.rev.1.ebwt',
-        'data/ext/quickmirseq/{org}/mrna.rev.2.ebwt'
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.fa'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.1.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.2.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.3.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.4.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.rev.1.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.rev.2.ebwt')
     singularity:
         'docker://flatberg/quickmirseq:01' 
     shell:
@@ -72,26 +74,26 @@ rule quickmirseq_genome_index:
     input:
         genome = rules.emsembl_noncoding_reference.output
     params:
-        index_base = 'data/ext/quickmirseq/{org}/genome'
+        index_base = join(EXT_DIR, 'quickmirseq', '{org}', 'genome')
     output:
-        'data/ext/quickmirseq/{org}/genome.1.ebwt',
-        'data/ext/quickmirseq/{org}/genome.2.ebwt',
-        'data/ext/quickmirseq/{org}/genome.3.ebwt',
-        'data/ext/quickmirseq/{org}/genome.4.ebwt',
-        'data/ext/quickmirseq/{org}/genome.rev.1.ebwt',
-        'data/ext/quickmirseq/{org}/genome.rev.2.ebwt'
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.fa'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.1.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.2.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.3.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.4.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.rev.1.ebwt'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.rev.2.ebwt')
     singularity:
         'docker://flatberg/quickmirseq:01' 
     shell:
         'bowtie-build {input.genome} {params.index_base}'
 
-rule quickmirseq_human:
+_ORG = ['homo_sapiens', 'mus_musculus', 'rattus_norvegicus']
+rule quickmirseq_build_alldb:
     input:
-        expand(rules.quickmirseq_mirbase_index.output, org='homo_sapiens'),
-        expand(rules.quickmirseq_smallrna_index.output, org='homo_sapiens'),
-        expand(rules.quickmirseq_mrna_index.output, org='homo_sapiens'),
-        expand(rules.quickmirseq_genome_index.output, org='homo_sapiens')
-    params:
-        dir='data/ext/quickmirseq/homo_sapiens'
+        expand(rules.quickmirseq_mirbase_index.output, org=_ORG),
+        expand(rules.quickmirseq_smallrna_index.output, org=_ORG),
+        expand(rules.quickmirseq_mrna_index.output, org=_ORG),
+        expand(rules.quickmirseq_genome_index.output, org=_ORG)
     output:
-        touch('data/ext/quickmirseq/homo_sapiens/.done')
+        touch(join(EXT_DIR, 'quickmirseq', '{org}', '.done'))

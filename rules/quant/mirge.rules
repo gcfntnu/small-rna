@@ -1,6 +1,6 @@
 #-*- mode:snakemake -*-
 import shutil
-import os
+from os.path import join, abspath
 
 include:
     'mirge.db'
@@ -19,28 +19,27 @@ rule mirge_symlink:
     input:
         get_filtered_fastq
     params:
-        outdir = os.path.abspath('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq')
+        join(QUANT_INTERIM, 'mirge', 'fastq')
     output:
-        os.path.join('data/tmp/GCF-2018-547-tmp/smallrna/mirge/fastq', '{sample}.fastq')
+        join(QUANT_INTERIM, 'mirge', 'fastq', '{sample}.fastq')
     run:
         import os
-        src = os.path.abspath(input[0])
-        dst = os.path.abspath(output[0])
+        src = abspath(input[0])
+        dst = abspath(output[0])
         os.symlink(src, dst)
         print('symlinking: {} > {}'.format(src, dst))
 
 rule mirge_annotate:
     input:
         fastq = expand(rules.mirge_symlink.output, sample=SAMPLES),
-        db = lambda wildcards: 'data/ext/mirge/{}/index.Libs/{}_snorna.3.ebwt'.format(MIRGE_ORG[wildcards.org], MIRGE_ORG[wildcards.org])
+        db = lambda wildcards: join(EXT_DIR, 'mirge','{0}', 'index.Libs','{0}_snorna.3.ebwt'.format(MIRGE_ORG[wildcards.org]))
     params:
-        bp = '/home/flatberg/miniconda3/envs/mirge/bin',
-        lib = 'data/ext/mirge',
+        lib = join(EXT_DIR, 'mirge'),
         org = lambda wildcards: MIRGE_ORG[wildcards.org],
         args = '-di -ai -gff ',
-        out = 'data/processed/mirge/{org}/{db}'
+        out = join(QUANT_PROCESSED, 'mirge','{org}','{db}')
     output:
-        'data/processed/mirge/{org}/{db}/.done'
+        dynamic(join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'miRge.{timestamp}', 'miR.Counts.csv'))
     singularity:
         'docker://flatberg/mirge:2.0.6'
     conda:
@@ -51,9 +50,12 @@ rule mirge_annotate:
         'miRge2.0 annotate '
         '-s {input.fastq} '
         '-d {wildcards.db} '
-        '-pb {params.bp} '
         '-lib {params.lib} '
         '-sp {params.org} '
         '{params.args} '
         '-cpu {threads} '
         '-o {params.out} '
+
+rule mirge_all:
+    input:
+        dynamic(join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], 'miRge.{timestamp}', 'miR.Counts.csv'))

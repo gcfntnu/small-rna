@@ -101,7 +101,7 @@ rule filter_truseq:
         '--html {log.html} '
 
 def _filter_get_trimmed(wildcards):
-    if not config.get('filter_trim', True):
+    if not config['filter'].get('filter_trim', True):
         return _filter_get_raw(wildcards)
     if 'kit' in wildcards:
         kit = wildcards.kit

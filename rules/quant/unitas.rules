@@ -1,21 +1,21 @@
 #-*- mode:snakemake -*-
 
-import os
+from os.path import join, abspath
 
 rule unitas:
     input:
         fastq = get_filtered_fastq
     params:
-        org = 'homo_sapiens',
-        tmpdir = 'data/tmp/GCF-2018-547-tmp/unitas',
-        outdir = os.path.abspath('data/processed/smallrna/unitas/{sample}'),
-        args = '-riborase -tail 3'
+        org = lambda wildcards: config['samples'][wildcards.samples].get('organism', 'homo_sapiens'),
+        tmpdir = join(QUANT_INTERIM, 'unitas'),
+        outdir = abspath(join(QUANT_PROCESSED, 'unitas', '{sample}')),
+        args = '-riborase '
     output:
-        'data/processed/smallrna/unitas/{sample}/unitas.annotation_summary.txt'
+        join(QUANT_PROCESSED, 'unitas', '{sample}', 'results.html')
     singularity:
         'docker://flatberg/unitas:1.6.0'
     threads:
-        12
+        1
     shell:
         """
         mkdir -p {params.tmpdir}

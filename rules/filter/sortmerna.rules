@@ -3,22 +3,25 @@
 include:
     'sortmerna.db'
 
-REF = [','.join(i) for i in zip( expand(join('data', 'ext', 'sortmerna', '{db}.fasta'), db=DB), expand(join('data', 'ext', 'sortmerna', '{db}.idx'), db=DB))]
-REF = ':'.join(REF)
+from os.path import join
+
+_SM_FASTA = expand(join(EXT_DIR, 'sortmerna', '{db}.fasta'), db=DB)
+_SM_IDX = expand(join(EXT_DIR, 'sortmerna', '{db}.idx'), db=DB)
+_SM_REF = [','.join(i) for i in zip(_SM_FASTA, _SM_IDX)]
+_SM_REF = ':'.join(REF)
     
 rule rrna_sortmerna:
     input:
         fastq = _filter_get_contaminants_clean
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/{sample}.rrna.sortmerna.clean.fastq',
-        counts = 'data/processed/smallrna/{sample}/{sample}.rrna.sortmerna.counts'
+        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.sortmerna.clean.fastq',
+        counts = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.sortmerna.counts'
     params:
         args = '--fastx --sam ',
-        ref = REF,
+        ref = _SM_REF,
         aligned = ''
     shell:
         'sortmerna '
         '--reads {input.fastq} '
         '--ref {params.ref} '
         '{params.args} '
-        

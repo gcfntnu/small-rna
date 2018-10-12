@@ -7,7 +7,7 @@ extra_conf_fn = srcdir('filter.config')
 if os.path.exists(extra_conf_fn):
     with open(extra_conf_fn) as fh:
         c  = yaml.load(fh) or {}
-        update_config(config, c)
+        update_config(c, config)
 
 def _filter_get_raw(wildcards):
     return config['samples'][int(wildcards.sample)]['R1']

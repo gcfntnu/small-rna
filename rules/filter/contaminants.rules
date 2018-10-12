@@ -130,13 +130,13 @@ rule contaminants_filter_bbduk:
         'bbduk.sh in={input.fastq} overwrite=true k=27 threads={threads} rcomp=f outu={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
 
 def _filter_get_contaminants_clean(wildcards):
-    cnt = config.get('filter_contaminants', True)
-    cnt_quant = config.get('contaminant_quantifier', 'bowtie')
+    cnt = config['filter'].get('filter_contaminants', True)
+    cnt_quant = config['filter'].get('contaminant_quantifier', 'bowtie')
     if cnt:
         if cnt_quant in ['bowtie', 'bbduk']:
             return join(FILTER_INTERIM, wildcards.sample, '{}.contaminants.{}.clean.fastq'.format(wildcards.sample, cnt_quant))
         elif cnt_quant == 'unitas':
-            assert(config.get('quant') == 'unitas')
+            assert(config['filter'].get('quant') == 'unitas')
             return _filter_get_trimmed(wildcards)
         else:
             raise ValueError('contaminant quantifier option not valid: {}'.format(quant))

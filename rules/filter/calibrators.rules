@@ -3,7 +3,7 @@
 from os.path import join
 from snakemake.workflow import srcdir
 
-CALIBRATORS_EXTEND = config.get('calibrators_extend', False)
+CALIBRATORS_EXTEND = config['filter'].get('calibrators_extend', False)
 CAL_DIR = join(EXT_DIR, 'smallrna', 'calibrators')
     
 rule calibrators_fasta:
@@ -174,13 +174,13 @@ rule calibrators_filter_bbduk:
         'bbduk.sh in={input.fastq} overwrite=true outu={output.fastq} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
 
 def _filter_get_calibrator_clean(wildcards):
-    cal = config.get('filter_calibrators', True)
-    cal_quant = config.get('calibrator_quantifier', 'bowtie')
+    cal = config['filter'].get('filter_calibrators', True)
+    cal_quant = config['filter'].get('calibrator_quantifier', 'bowtie')
     if cal:
         if cal_quant in ['bowtie', 'bbduk']:
             return join(FILTER_INTERIM, wildcards.sample, '{}.calibrators.{}.clean.fastq'.format(wildcards.sample, cal_quant))
         elif cal_quant == 'unitas':
-            assert(config.get('quant') == 'unitas')
+            assert(config['filter'].get('quant') == 'unitas')
             return _filter_get_trimmed(wildcards)
         else:
             raise ValueError('calibrator quantifier option not valid: {}'.format(cal_quant))

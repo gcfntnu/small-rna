@@ -1,5 +1,18 @@
 #-*- mode:snakemake -*-
 
+QUANT_INTERIM = join(INTERIM_DIR, 'smallrna', 'quant')
+QUANT_PROCESSED = join(PROCESSED_DIR, 'smallrna', 'quant')
+
+extra_conf_fn = srcdir('quant.config')
+if os.path.exists(extra_conf_fn):
+    with open(extra_conf_fn) as fh:
+        c  = yaml.load(fh) or {}
+        # original config will override extra config on shared items
+        # c=config, config=overwrite_config
+        print(c)
+        update_config(c, config)
+        print(config['quant'])
+
 include:
     'quant/quickmirseq.rules'
 include:

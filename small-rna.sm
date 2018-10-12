@@ -35,7 +35,7 @@ extra_conf_fn = srcdir('small-rna.config')
 if os.path.exists(extra_conf_fn):
     with open(extra_conf_fn) as fh:
         c  = yaml.load(fh) or {}
-        update_config(config, c)
+        update_config(c, config)
 
 include:
     'rules/filter.rules'
