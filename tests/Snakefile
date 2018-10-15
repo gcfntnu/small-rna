@@ -1,0 +1,16 @@
+#-*-mode:snakemake-*-
+import glob
+import os
+
+configfile:
+    'config.yaml'
+
+include:
+    '../small-rna.sm'
+    
+SAMPLES = list(config['samples'].keys())
+
+MIRGE_DB = ['mirbase', 'mirnadb']
+
+rule test_quant:
+    expand(rules.mirge.annotate, org='homo_sapiens', db=MIRGE_DB)

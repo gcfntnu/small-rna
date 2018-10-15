@@ -1,0 +1,34 @@
+#-*- mode:snakemake -*-
+
+RTR_VERSION = config.get('regulatoryrna_version', '2.0')
+RTR_ORG = {'homo_sapiens': 'hsa',
+           'human': 'hsa',
+           'hsa': 'hsa',
+           'mus_musculus': 'mmu',
+           'mouse': 'mmu',
+           'mmu': 'mmu',
+           'rattus_norvegicus': 'rno',
+           'rat': 'rno',
+           'rno': 'rno'}
+
+
+rule regulatoryrna_fasta:
+    params:
+        url = 'http://www.regulatoryrna.org/database/piRNA/download/archive/v{}/fasta'.format(RTR_VERSION),
+        rtr_org = lambda wildcards: RTR_ORG[wildcards.org]
+    output:
+        'data/ext/regulatoryrna/{org}/pirna.fa'
+    shell:
+        'wget -O- {params.url}/{params.mirbase_org}.fa.gz | gunzip -C > {output}'
+        
+rule pirna_bank_fasta:
+    params:
+        url = 'http://pirnabank.ibab.ac.in/downloads/all/human_all.zip'
+    output:
+        'data/ext/pirnabank/homo_sapiens/pirna.fa'
+    shell:
+        """
+        wget {params.url} -O- | zcat | sed 's/U/T/g' > {output}
+        """
+        
+'bowtie mirna.fa -n 0 -f --norc -S SeqToAnnot.fasta+ 1> SeqToAnnot.sam 2> SeqToAnnot.log'

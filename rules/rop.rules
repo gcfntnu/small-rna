@@ -1,0 +1,5 @@
+#-*- mode:snakemake -*-
+
+include:
+    'rop/kraken.rules'
+

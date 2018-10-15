@@ -1,0 +1,32 @@
+#-*- mode:snakemake -*-
+"""Kraken taxonomic sequence classification system
+
+https://ccb.jhu.edu/software/kraken/
+https://github.com/DerrickWood/kraken2
+
+"""
+
+include:
+    'kraken.db'
+
+
+rule kraken_map:
+    input:
+       fasta = _get_unmapped_fasta,
+       db = rules.minikraken_8gb.output if config.get('kraken_db', '8GB') == '8GB' else rules.minikraken_4gb.output
+    params:
+        rules.minikraken_8gb.params.db if config.get('kraken_db', '8GB') == '8GB' else rules.minikraken_4gb.params.db
+    output:
+        'metagenome/kraken8/{sample}.seq'
+    shell:
+        'kraken --db {params} {input.fastq} > {output} '
+
+rule kraken_report:
+    input:
+        'metagenome/kraken8/{sample}.seq'
+    output:
+        'metagenome/kraken8/{sample}.report'
+    params:
+        rules.minikraken_8gb.params.db if config.get('kraken_db', '8GB') == '8GB' else rules.minikraken_8gb.params.db   
+    shell:
+        'kraken-report --db {params} {input} > {output}'

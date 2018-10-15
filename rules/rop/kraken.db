@@ -1,0 +1,55 @@
+#-*- mode:snakemake -*-
+"""Kraken taxonomic sequence classification system
+
+https://ccb.jhu.edu/software/kraken/
+https://github.com/DerrickWood/kraken2
+
+kraken2 download:
+archaea: RefSeq complete archaeal genomes/proteins
+bacteria: RefSeq complete bacterial genomes/proteins
+plasmid: RefSeq plasmid nucleotide/protein sequences
+viral: RefSeq complete viral genomes/proteins
+human: GRCh38 human genome/proteins
+fungi: RefSeq complete fungal genomes/proteins
+plant: RefSeq complete plant genomes/proteins
+protozoa: RefSeq complete protozoan genomes/proteins
+nr: NCBI non-redundant protein database
+nt: NCBI non-redundant nucleotide database
+env_nr: NCBI non-redundant protein database with sequences from large environmental sequencing projects
+env_nt: NCBI non-redundant nucleotide database with sequences from large environmental sequencing projects
+UniVec: NCBI-supplied database of vector, adapter, linker, and primer sequences that may be contaminating sequencing projects and/or assemblies
+UniVec_Core: A subset of UniVec chosen to minimize false positive hits to the vector database
+
+"""
+
+rule minikraken_8gb:
+    output:
+        'data/ext/kraken/minikraken_8GB/database.idx'
+    params:
+        db = 'data/ext/minikraken_8GB',
+        url = 'https://ccb.jhu.edu/software/kraken/dl/minikraken_20171019_8GB.tgz'
+    shell:
+        'curl {params.url} | tar xz -C {params.db} --strip-components=1'
+        
+rule minikraken_4gb:
+    output:
+        'data/ext/kraken/minikraken_4GB/database.idx'
+    params:
+        db = 'data/ext/minikraken_4GB',
+        url = 'https://ccb.jhu.edu/software/kraken/dl/minikraken_20171019_4GB.tgz'
+    shell:
+        'curl {params.url} | tar xz -C {params.db} --strip-components=1'
+
+rule kraken2_taxonomy:
+    output:
+        'data/ext/kraken2/db/taxonomy/names.dmp'
+    params:
+        db = 'data/ext/kraken2/db/'
+    shell:
+        'kraken2-build --download-taxonomy --db {params.db}'
+
+rule kraken2_reference_library:
+    output:
+        'data/ext/kraken2/db/{kraken_ref}'
+    shell:
+        'kraken2-build --download {kraken_ref}  --db {output}'
