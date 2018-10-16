@@ -22,7 +22,7 @@ from snakemake.utils import update_config
 
 TMPDIR = os.environ.get('TMPDIR', '/tmp')
 # environment variables can override config file
-INTERIM_DIR = environ.get('GCF-INTERIM') or config.get('interim_dir', abspath('data/tmp'))
+INTERIM_DIR = environ.get('GCF-INTERIM') or config.get('interim_dir', abspath('data/tmp/'))
 makedirs(INTERIM_DIR, exist_ok=True)
 EXT_DIR = environ.get('GCF-EXT') or config.get('ext_dir', abspath('data/ext'))
 makedirs(EXT_DIR, exist_ok=True)
@@ -35,6 +35,7 @@ extra_conf_fn = srcdir('small-rna.config')
 if os.path.exists(extra_conf_fn):
     with open(extra_conf_fn) as fh:
         c  = yaml.load(fh) or {}
+        # original config will override extra config on shared items
         update_config(c, config)
 
 include:

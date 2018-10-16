@@ -7,10 +7,10 @@ include:
 rule rrna_filter_bbduk:
     input:
         fastq = _filter_get_contaminants_clean,
-        ref = 'data/ext/rrna/ribokmers.fa.gz'
+        ref = join(EXT_DIR, 'rrna', 'ribokmers.fa.gz') # fixme: needs download routine
     output:
-        fastq = 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{sample}/{sample}.rrna.bbduk.clean.fastq',
-        counts = 'data/processed/smallrna/filtered/{sample}/{sample}.rrna.bbmap.counts'
+        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbduk.clean.fastq'),
+        counts = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbmap.counts')
     conda:
         'envs/filter.yaml'
     log:
@@ -26,7 +26,9 @@ def _filter_clean_fastq(wildcards):
     ribo_quant = config['filter'].get('ribosomal_quantifier', 'bbduk')
     if rib:
         if ribo_quant in ['bbduk', 'sortmerna']:
-            return 'data/tmp/GCF-2018-547-tmp/smallrna/filtered/{}/{}.rrna.{}.clean.fastq'.format(wildcards.sample, wildcards.sample, ribo_quant)
+            join(EXT_DIR, 'rrna', 'ribokmers.fa.gz') # fixme: needs download routine
+    output:
+        return join(FILTER_INTERIM, '{0}', '{0}.rrna.{1}.clean.fastq').format(wildcards.sample, ribo_quant)
         elif ribo_quant == 'unitas':
             assert(config['filter'].get('quant') == 'unitas')
             return _filter_get_trimmed(wildcards)

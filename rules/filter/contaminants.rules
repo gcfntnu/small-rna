@@ -10,14 +10,14 @@ bbduk.sh -Xmx1g in=reads.fq out=clean.fq ref=phix.fasta k=31 hdist=1
 NOTES:
 emvec looks to be too diverse and perhaps only used when vector contamination is suspected
 """
-
+from os.path import join
 
 rule contaminants_bacterial:
     params:
         url = 'https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing',
-        file = 'data/ext/fusedEPmasked2.fa.gz'
+        file = join(EXT_DIR, 'fusedEPmasked2.fa.gz') #fixme: download routines
     output:
-        'data/ext/smallrna/contaminants/bacterial_common_JGI/fasta/fusedEPmasked2.fa'
+        join(EXT_DIR, 'contaminants', 'bacterial_common_JGI', 'fasta', 'fusedEPmasked2.fa')
     shell:
         """gunzip {params.file} -c | sed 's/ /_/g' > {output}"""
 
@@ -26,7 +26,7 @@ rule contaminants_univec_fasta:
         url = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec',
         url_core = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec_Core'
     output:
-        'data/ext/smallrna/contaminants/univec/fasta/univec.fa'
+        join(EXT_DIR, 'contaminants', 'univec', 'fasta', 'univec.fa')
     shell:
         'wget {params.url_core} -O- > {output}'
 
@@ -34,7 +34,7 @@ rule contaminants_univec_anno:
     input:
         rules.contaminants_univec_fasta.output
     output:
-        'data/ext/smallrna/contaminants/univec/anno.tsv'
+        join(EXT_DIR, 'contaminants', 'univec', 'anno.tsv')
     shell:
         """
         grep '>' {input} | sed 's/ /\t/' > {output}
@@ -46,7 +46,7 @@ rule contaminants_emvec_fasta:
     params:
         url = 'http://ftp.ebi.ac.uk/pub/databases/emvec/emvec.dat.gz'
     output:
-        'data/ext/smallrna/contaminants/emvec/fasta/emvec.fa'
+        join(EXT_DIR, 'contaminants', 'univec', 'fasta', 'emvec.fa')
     shell:
         """
         wget {params.url} -O- | gunzip -c | grep -E '^DE|^ ' | awk '/^DE/ {{ sub(/DE */,">"); gsub(/[ |]/,"_") }}; {{ print }}' | awk '/^ / {{ gsub(/ /,""); sub(/[0-9]*$/,"") }}; {{ print}}' > {output}
@@ -56,7 +56,7 @@ rule contaminants_emvec_anno:
     input:
         rules.contaminants_emvec_fasta.output
     output:
-        'data/ext/smallrna/contaminants/emvec/anno.tsv'
+        join(EXT_DIR, 'contaminants', 'emvec', 'anno.tsv')
     shell:
         """
         grep '>' {input} | sed 's/ /\t/' > {output}
@@ -66,17 +66,22 @@ rule contaminants_fasta:
     input:
         rules.contaminants_bacterial.output, rules.contaminants_univec_fasta.output
     output:
-        'data/ext/smallrna/contaminants/fasta/contaminants.fa'
+        join(EXT_DIR, 'contaminants', 'fasta', 'contaminants.fa')
     shell:
         'cat {input} > {output}'
         
 rule contaminants_index_bowtie:
     input:
-        'data/ext/smallrna/contaminants/fasta/contaminants.fa'
+        rules.contaminants_fasta.output
     params:
-        index = 'data/ext/smallrna/contaminants/index/cont'
+        index = join(EXT_DIR, 'contaminants', 'index', 'cont')
     output:
-        'data/ext/smallrna/contaminants/index/cont.1.ebwt'
+        join(EXT_DIR, 'contaminants', 'index', 'cont.1.ebwt'),
+        join(EXT_DIR, 'contaminants', 'index', 'cont.2.ebwt'),
+        join(EXT_DIR, 'contaminants', 'index', 'cont.3.ebwt'),
+        join(EXT_DIR, 'contaminants', 'index', 'cont.4.ebwt'),
+        join(EXT_DIR, 'contaminants', 'index', 'cont.rev.1.ebwt'),
+        join(EXT_DIR, 'contaminants', 'index', 'cont.rev.2.ebwt'),
     conda:
         'envs/contaminants.yaml'
     shell:
