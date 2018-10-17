@@ -7,10 +7,10 @@ extra_conf_fn = srcdir('filter.config')
 if os.path.exists(extra_conf_fn):
     with open(extra_conf_fn) as fh:
         c  = yaml.load(fh) or {}
-        update_config(c, config)
+        update_config2(config, c)
 
 def _filter_get_raw(wildcards):
-    return config['samples'][int(wildcards.sample)]['R1']
+    return config['samples'][wildcards.sample]['R1']
        
 include:
     'filter/cliptrim.rules'

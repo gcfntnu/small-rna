@@ -69,7 +69,17 @@ rule contaminants_fasta:
         join(EXT_DIR, 'contaminants', 'fasta', 'contaminants.fa')
     shell:
         'cat {input} > {output}'
-        
+
+rule contaminants_unitas:
+    input:
+        rules.contaminants_fasta.output
+    params:
+        script = srcdir('scripts/contaminants_unitas.py')
+    output:
+        join(INTERIM_DIR, '_contaminants_unitas_formatted.fa')
+    shell:
+        'python {params.script} {input} > {output}'
+
 rule contaminants_index_bowtie:
     input:
         rules.contaminants_fasta.output

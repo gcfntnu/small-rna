@@ -1,0 +1,28 @@
+#-*- mode:snakemake -*-
+"""Extra reference sequences for unitas.
+
+Additional files that contain reference sequeces in FASTA format. FASTA headers should have the following format: >ncRNA_type|ncRNA_name 
+
+This will be added to ncRNA.fas
+"""
+CALIBRATORS_EXTEND = config['filter'].get('calibrators_extend', False)
+UNITAS_REFSEQ = []
+
+if config.get('filter_calibrators'):
+    if config['filter']['calibrator_quantifier'] == 'unitas':
+        UNITAS_REFSEQ.append(rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output)
+if config.get('filter_contaminants'):
+    if config['filter']['contaminants_quantifier'] == 'unitas':
+        UNITAS_REFSEQ.append(rules.contaminants_unitas.output)
+
+
+rule rnacentral_ncrna:
+    
+        
+rule extra_reference:
+    input:
+        UNITAS_REFSEQ
+    output:
+        'data/tmp/smallrna/quant/unitas/refseq.fa'
+    shell:
+        'cat {input} > {output}sa'

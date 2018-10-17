@@ -89,6 +89,7 @@ rule quickmirseq_genome_index:
         'bowtie-build {input.genome} {params.index_base}'
 
 _ORG = ['homo_sapiens', 'mus_musculus', 'rattus_norvegicus']
+
 rule quickmirseq_build_alldb:
     input:
         expand(rules.quickmirseq_mirbase_index.output, org=_ORG),

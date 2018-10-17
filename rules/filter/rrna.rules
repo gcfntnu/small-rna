@@ -26,9 +26,7 @@ def _filter_clean_fastq(wildcards):
     ribo_quant = config['filter'].get('ribosomal_quantifier', 'bbduk')
     if rib:
         if ribo_quant in ['bbduk', 'sortmerna']:
-            join(EXT_DIR, 'rrna', 'ribokmers.fa.gz') # fixme: needs download routine
-    output:
-        return join(FILTER_INTERIM, '{0}', '{0}.rrna.{1}.clean.fastq').format(wildcards.sample, ribo_quant)
+            return join(FILTER_INTERIM, '{0}', '{0}.rrna.{1}.clean.fastq').format(wildcards.sample, ribo_quant)
         elif ribo_quant == 'unitas':
             assert(config['filter'].get('quant') == 'unitas')
             return _filter_get_trimmed(wildcards)

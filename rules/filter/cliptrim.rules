@@ -24,7 +24,8 @@ rule filter_adapter_atropos:
         '-o {output.trimmed} '
         '-T {threads} '
         '{params.args} '
-        ' > {log}'
+        ' > {log} '
+        '&& test -f {output.untrimmed} || touch {output.untrimmed}'
 
 rule filter_bioscientific_trimmed:
     input:

@@ -2,14 +2,25 @@
 
 from os.path import join, abspath
 
+include:
+    'unitas.db'
+
+UNITAS_ARGS = ''
+if config.get('filter_ribosomal'):
+    if config['filter']['contaminants_quantifier'] == 'unitas':
+        UNITAS_ARGS += '--riborase '
+if len(UNITAS_REFSEQ) > 0:
+    UNITAS_ARGS += '-refseq {} '.format(rules.extra_reference.output)
+
+
 rule unitas:
     input:
         fastq = get_filtered_fastq
     params:
-        org = lambda wildcards: config['samples'][wildcards.samples].get('organism', 'homo_sapiens'),
+        org = lambda wildcards: config['samples'][wildcards.sample].get('organism', 'homo_sapiens'),
         tmpdir = join(QUANT_INTERIM, 'unitas'),
         outdir = abspath(join(QUANT_PROCESSED, 'unitas', '{sample}')),
-        args = '-riborase '
+        args = UNITAS_ARGS + ' -species_miR_only'
     output:
         join(QUANT_PROCESSED, 'unitas', '{sample}', 'results.html')
     singularity:

@@ -56,6 +56,7 @@ rule mirge_annotate:
         '-cpu {threads} '
         '-o {params.out} '
 
+
 rule mirge_all:
     input:
         dynamic(join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], 'miRge.{timestamp}', 'miR.Counts.csv'))

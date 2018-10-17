@@ -4,16 +4,38 @@ from os.path import dirname
 include:
     'quickmirseq.db'
     
-rule quickmirseq_config:
+rule quickmirseq_symlink:
+    input:
+        fastq = get_filtered_fastq
     params:
-        fastq_dir = 'data/tmp/GCF',
-        species = 'human',
-        rna_db = 'data/ext/quickmirseq/databases/homo_sapiens',
-        dna_bowtie_index = 'data/ext/quickmirseq/homo_sapiens/genome/'
+        fastq_dir = join(QUANT_INTERIM, 'quickmirseq', 'fastq'),
+        samples = join(QUANT_INTERIM, 'quickmirseq', 'allids.txt')
+    output:
+        fastq = join(QUANT_INTERIM, 'quickmirseq', 'fastq', '{sample}.fastq')
+    run:
+        import os
+        src = abspath(input.fastq)
+        dst = abspath(output.fastq)
+        os.symlink(src, dst)
+        print('symlinking: {} > {}'.format(src, dst))
+        with open(params.samples, 'a') as fh:
+            name, ext = os.path.splitext(os.path.basename(dst))
+            fh.write(name + '\n')
+        
+            
+rule quickmirseq_config:
+    input:
+        db = join(EXT_DIR, 'quickmirseq', '{org}', '.done')
+    params: 
+        fastq_dir = rules.quickmirseq_symlink.params.fastq_dir,
+        species = '{org}',
+        rna_db = join(EXT_DIR, 'quickmirseq', 'databases', '{org}'),
+        dna_bowtie_index = join(EXT_DIR, 'quickmirseq', 'databases', '{org}', 'genome'),
+        output = join(QUANT_PROCESSED, 'quickmirseq','{org}')
     threads:
         8
     output:
-        'quickmirseq.config'
+        'data/tmp/quickmirseq.config'
     shell:
         """
         echo SPECIES={params.species} >> {output}
@@ -22,8 +44,8 @@ rule quickmirseq_config:
         echo FASTQ_DIR={params.fastq_dir} >> {output}
         echo CPU={threads} >> {output}
         echo STRAND=1 >> {output}
-        echo FASTQ_SUFFIX=data/processed/quickmirseq/test >> {output}
-        echo OUTPUT_FOLDER=output >> {output}
+        echo FASTQ_SUFFIX=fastq >> {output}
+        echo OUTPUT_FOLDER={params.output} >> {output}
         echo RUN_EXTENSION_EVALUATION=yes >> {output}
         echo CUTADAPT_REQUIRED=no >> {output}
         echo REFINE_MISMATACH_READS=yes >> {output}
@@ -36,15 +58,14 @@ rule quickmirseq_config:
         echo UNIQUE_LIBRARY_ANALYSIS=yes >> {output}
         echo OFFSET_ANALYSIS=yes >> {output}
         """    
-
-rule quickmirseq_input:
-    output:
-        'all_samples.txt'
         
 rule quickmirseq:
+    input:
+        samples = rules.quickmirseq_symlink.params.samples,
+        config = rules.quickmirseq_config.output
     singularity:
         'docker://flatberg/quickmirseq:01'
     shell:
         'perl  $QuickMIRSeq/QuickMIRSeq.pl  '
-        'allIDs.txt '
-        'run.config'
+        '{input.samples} '
+        '{input.config} '
