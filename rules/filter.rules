@@ -1,4 +1,5 @@
 #-*- mode:snakemake -*-
+import os
 
 FILTER_INTERIM = join(INTERIM_DIR, 'smallrna', 'filtered')
 FILTER_PROCESSED = join(PROCESSED_DIR, 'smallrna', 'filtered')

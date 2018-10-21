@@ -64,7 +64,7 @@ rule contaminants_emvec_anno:
 
 rule contaminants_fasta:
     input:
-        rules.contaminants_bacterial.output, rules.contaminants_univec_fasta.output
+        rules.contaminants_univec_fasta.output
     output:
         join(EXT_DIR, 'contaminants', 'fasta', 'contaminants.fa')
     shell:

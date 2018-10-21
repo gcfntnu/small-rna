@@ -17,7 +17,7 @@ rule quickmirseq_symlink:
         src = abspath(input.fastq)
         dst = abspath(output.fastq)
         os.symlink(src, dst)
-        print('symlinking: {} > {}'.format(src, dst))
+        #print('symlinking: {} > {}'.format(src, dst))
         with open(params.samples, 'a') as fh:
             name, ext = os.path.splitext(os.path.basename(dst))
             fh.write(name + '\n')
@@ -35,7 +35,7 @@ rule quickmirseq_config:
     threads:
         8
     output:
-        'data/tmp/quickmirseq.config'
+        'data/tmp/quickmirseq.conf'
     shell:
         """
         echo SPECIES={params.species} >> {output}

@@ -8,7 +8,7 @@ if __name__ == '__main__':
         for line in fh:
             if line.startswith('>'):
                 name = line.split('>')[-1]
-                name = name.replace('|', ' ')
+                name = name.replace('|', '::')
                 name = name.replace('_', '')
                 line = '>Contaminant|{}'.format(name)
             sys.stdout.write(line)

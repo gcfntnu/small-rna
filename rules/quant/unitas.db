@@ -8,11 +8,11 @@ This will be added to ncRNA.fas
 CALIBRATORS_EXTEND = config['filter'].get('calibrators_extend', False)
 UNITAS_REFSEQ = []
 
-if config.get('filter_calibrators'):
+if config['filter'].get('filter_calibrators'):
     if config['filter']['calibrator_quantifier'] == 'unitas':
         UNITAS_REFSEQ.append(rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output)
-if config.get('filter_contaminants'):
-    if config['filter']['contaminants_quantifier'] == 'unitas':
+if config['filter'].get('filter_contaminants'):
+    if config['filter']['contaminant_quantifier'] == 'unitas':
         UNITAS_REFSEQ.append(rules.contaminants_unitas.output)
 
 
@@ -25,4 +25,4 @@ rule extra_reference:
     output:
         'data/tmp/smallrna/quant/unitas/refseq.fa'
     shell:
-        'cat {input} > {output}sa'
+        'cat {input} > {output}'
