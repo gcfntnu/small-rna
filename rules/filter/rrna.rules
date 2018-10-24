@@ -4,10 +4,18 @@ from os.path import join
 include:
     'sortmerna.rules'
 
+rule rrna_ribokmers:
+    params:
+        url = 'http://portal.nersc.gov/dna/microbial/assembly/bushnell/riboKmers.fa.gz'
+    output:
+        join(EXT_DIR, 'rrna', 'ribokmers.fa.gz')
+    shell:
+        'wget {params.url} -O- > {output}'
+    
 rule rrna_filter_bbduk:
     input:
         fastq = _filter_get_contaminants_clean,
-        ref = join(EXT_DIR, 'rrna', 'ribokmers.fa.gz') # fixme: needs download routine
+        ref = rules.rrna_ribokmers.output
     output:
         fastq = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbduk.clean.fastq'),
         counts = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbmap.counts')

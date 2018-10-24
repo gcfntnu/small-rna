@@ -12,14 +12,26 @@ emvec looks to be too diverse and perhaps only used when vector contamination is
 """
 from os.path import join
 
+
+rule contaminants_phix:
+    params:
+        url = 'ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/PhiX/Illumina/RTA/PhiX_Illumina_RTA.tar.gz'
+    output:
+        join(EXT_DIR, 'contaminants', 'phix', 'fasta', 'phix.fa')
+    shell:
+        """
+        curl {params.url} | tar xv
+        mv PhiX/Illumina/RTA/Sequence/WholeGenomeFasta/genome.fa {output}
+        rm -rf PhiX
+        """
+
 rule contaminants_bacterial:
     params:
-        url = 'https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing',
-        file = join(EXT_DIR, 'fusedEPmasked2.fa.gz') #fixme: download routines
+        url = 'http://portal.nersc.gov/dna/microbial/assembly/bushnell/fusedEPmasked2.fa.gz',
     output:
         join(EXT_DIR, 'contaminants', 'bacterial_common_JGI', 'fasta', 'fusedEPmasked2.fa')
     shell:
-        """gunzip {params.file} -c | sed 's/ /_/g' > {output}"""
+        """wget {params.url}  | gunzip -c | sed 's/ /_/g' > {output}"""
 
 rule contaminants_univec_fasta:
     params:
@@ -76,7 +88,7 @@ rule contaminants_unitas:
     params:
         script = srcdir('scripts/contaminants_unitas.py')
     output:
-        join(INTERIM_DIR, '_contaminants_unitas_formatted.fa')
+        temp(join(INTERIM_DIR, '_contaminants_unitas_formatted.fa'))
     shell:
         'python {params.script} {input} > {output}'
 
