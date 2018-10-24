@@ -24,15 +24,24 @@ URLS =  {'human':
          'fruitfly':
          'fruitfly.tar.gz https://jh.box.com/shared/static/ilrnq62cp06pviir5t0mh85aqet0fmjq.gz'
          }
+MIRGE_ORG = {'homo_sapiens': 'human',
+           'human': 'human',
+           'human': 'human',
+           'mus_musculus': 'mouse',
+           'mouse': 'mouse',
+           'mouse': 'mouse',
+           'rattus_norvegicus': 'rat',
+           'rat': 'rat',
+           'rat': 'rat'}
 
 rule download_db:
     params:
-        url = lambda wildcards: URLS[wildcards.org],
-        out = join(EXT_DIR, 'mirge')
+        url = lambda wildcards: URLS[MIRGE_ORG[wildcards.org]],
+        out = join(EXT_DIR, 'mirge', '{org}')
     output:
         join(EXT_DIR, 'mirge', '{org}', 'index.Libs', 'human_snorna.3.ebwt')
     shell:
-        'wget -qO- {params.url} | tar xvz -C {params.out}'
+        'wget -qO- {params.url} | tar xvz --strip-components 1 -C {params.out}'
 
 rule mirge_db:
     input:

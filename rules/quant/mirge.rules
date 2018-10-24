@@ -5,6 +5,7 @@ from os.path import join, abspath
 include:
     'mirge.db'
 
+
 MIRGE_ORG = {'homo_sapiens': 'human',
            'human': 'human',
            'human': 'human',
@@ -32,14 +33,15 @@ rule mirge_symlink:
 rule mirge_annotate:
     input:
         fastq = expand(rules.mirge_symlink.output, sample=SAMPLES),
-        db = lambda wildcards: join(EXT_DIR, 'mirge','{0}', 'index.Libs','{0}_snorna.3.ebwt'.format(MIRGE_ORG[wildcards.org]))
+        db = lambda wildcards: join(EXT_DIR, 'mirge', MIRGE_ORG[wildcards.org], 'index.Libs', MIRGE_ORG[wildcards.org] + '_snorna.3.ebwt')
     params:
         lib = join(EXT_DIR, 'mirge'),
         org = lambda wildcards: MIRGE_ORG[wildcards.org],
         args = '-di -ai -gff ',
+        tmp_out = join(INTERIM_DIR, 'mirge','{org}','{db}'),
         out = join(QUANT_PROCESSED, 'mirge','{org}','{db}')
     output:
-        dynamic(join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'miRge.{timestamp}', 'miR.Counts.csv'))
+        join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'miR.Counts.csv')
     singularity:
         'docker://flatberg/mirge:2.0.6'
     conda:
@@ -54,9 +56,14 @@ rule mirge_annotate:
         '-sp {params.org} '
         '{params.args} '
         '-cpu {threads} '
-        '-o {params.out} '
+        '-o {params.tmp_out} '
+        '&& mv {params.tmp_out}/miRge*/* {params.out} '
+        '&& rm -rf {params.tmp_out}/miRge* '
 
 
 rule mirge_all:
     input:
-        dynamic(join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], 'miRge.{timestamp}', 'miR.Counts.csv'))
+        join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], 'miR.Counts.csv')
+    output:
+        touch(join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], '.done'))
+        

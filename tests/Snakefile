@@ -12,6 +12,11 @@ SAMPLES = list(config['samples'].keys())
 
 MIRGE_DB = ['mirbase', 'mirnadb']
 
-rule test_unitas:
-    input:
-        expand(rules.unitas.output, sample=SAMPLES)
+if config['filter']['quant'] == 'unitas':
+    rule test:
+        input:
+            expand(rules.unitas.output, sample=SAMPLES)
+elif config['filter']['quant'] == 'mirge':
+    rule test:
+        input:
+            rules.mirge_all.output
