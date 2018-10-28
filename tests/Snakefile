@@ -20,3 +20,7 @@ elif config['filter']['quant'] == 'mirge':
     rule test:
         input:
             rules.mirge_all.output
+elif config['filter']['quant'] == 'quickmirseq':
+    rule test:
+        input:
+            rules.quickmirseq.output

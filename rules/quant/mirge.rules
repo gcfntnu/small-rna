@@ -6,16 +6,6 @@ include:
     'mirge.db'
 
 
-MIRGE_ORG = {'homo_sapiens': 'human',
-           'human': 'human',
-           'human': 'human',
-           'mus_musculus': 'mouse',
-           'mouse': 'mouse',
-           'mouse': 'mouse',
-           'rattus_norvegicus': 'rat',
-           'rat': 'rat',
-           'rat': 'rat'}
-
 rule mirge_symlink:
     input:
         get_filtered_fastq
@@ -41,7 +31,11 @@ rule mirge_annotate:
         tmp_out = join(INTERIM_DIR, 'mirge','{org}','{db}'),
         out = join(QUANT_PROCESSED, 'mirge','{org}','{db}')
     output:
-        join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'miR.Counts.csv')
+        mirtable = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'miR.Counts.csv'),
+        mirtable_ext = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'isomirs.csv'),
+        annotation = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'annotation.report.csv'),
+        umapped = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'unmapped.csv'),
+        a2i = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'a2IEditing.report.newform.csv')
     singularity:
         'docker://flatberg/mirge:2.0.6'
     conda:
@@ -49,6 +43,7 @@ rule mirge_annotate:
     threads:
         8
     shell:
+        'mkdir -p {params.tmp_out} && '
         'miRge2.0 annotate '
         '-s {input.fastq} '
         '-d {wildcards.db} '
@@ -58,12 +53,25 @@ rule mirge_annotate:
         '-cpu {threads} '
         '-o {params.tmp_out} '
         '&& mv {params.tmp_out}/miRge*/* {params.out} '
-        '&& rm -rf {params.tmp_out}/miRge* '
+        '&& rm -rf {params.tmp_out} '
 
-
+rule mirge_unmapped:
+    input:
+        join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'unmapped.csv')
+    output:
+        join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'unmapped.fasta')
+    run:
+        with open(input[0]) as fh:
+            txt = fh.read().splitlines()
+        with open(output[0], 'w') as fh:
+            for i, line in enumerate(txt[1:]):
+                seq = line.split(',')[0]
+                fh.write('>unmapped-{}\n'.format(i))
+                fh.write(seq + '\n')
+            
 rule mirge_all:
     input:
-        join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], 'miR.Counts.csv')
+        join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], 'miR.Counts.csv'),
+        join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], 'unmapped.fasta')
     output:
         touch(join(QUANT_PROCESSED, 'mirge', config['organism'], config['quant']['mirge']['db'], '.done'))
-        

@@ -1,5 +1,5 @@
 #-*- mode:snakemake -*-
-from os.path import dirname
+from os.path import dirname, abspath
 
 include:
     'quickmirseq.db'
@@ -29,24 +29,24 @@ rule quickmirseq_config:
     params: 
         fastq_dir = rules.quickmirseq_symlink.params.fastq_dir,
         species = '{org}',
-        rna_db = join(EXT_DIR, 'quickmirseq', 'databases', '{org}'),
-        dna_bowtie_index = join(EXT_DIR, 'quickmirseq', 'databases', '{org}', 'genome'),
-        output = join(QUANT_PROCESSED, 'quickmirseq','{org}')
+        rna_db = abspath(join(EXT_DIR, 'quickmirseq', '{org}')),
+        dna_bowtie_index = abspath(join(EXT_DIR, 'quickmirseq', '{org}', 'genome')),
+        output = join(QUANT_PROCESSED, 'quickmirseq')
     threads:
         8
     output:
-        'data/tmp/quickmirseq.conf'
+        join(EXT_DIR, 'quickmirseq', '{org}', 'quickmirseq.conf')
     shell:
         """
         echo SPECIES={params.species} >> {output}
         echo RNA_BOWTIE_INDEX={params.rna_db} >> {output}
-        echo GENOME_BOWTIE_INDEX={params.dna_db} >> {output}
+        echo GENOME_BOWTIE_INDEX={params.dna_bowtie_index} >> {output}
         echo FASTQ_DIR={params.fastq_dir} >> {output}
         echo CPU={threads} >> {output}
         echo STRAND=1 >> {output}
         echo FASTQ_SUFFIX=fastq >> {output}
         echo OUTPUT_FOLDER={params.output} >> {output}
-        echo RUN_EXTENSION_EVALUATION=yes >> {output}
+        echo RUN_EXTENSION_EVALUATION=no >> {output}
         echo CUTADAPT_REQUIRED=no >> {output}
         echo REFINE_MISMATACH_READS=yes >> {output}
         echo ZEROCOUNT_THRESHOLD=0 >> {output}
@@ -54,18 +54,36 @@ rule quickmirseq_config:
         echo AVG_READ_THRESHOLD=2 >> {output}
         echo MIN_MIRNA_LENGTH=16 >> {output}
         echo MAX_MIRNA_LENGTH=28 >> {output}
-        echo keepTemp=yes >> {output}
+        echo EXTENSION3=5 >> {output}
+        echo EXTENSION5=4 >> {output}
+        echo keepTemp=no >> {output}
         echo UNIQUE_LIBRARY_ANALYSIS=yes >> {output}
         echo OFFSET_ANALYSIS=yes >> {output}
         """    
-        
+
+rule sample_file:
+    output:
+        join(EXT_DIR, 'quickmirseq', 'all_ids.quickmirseq')
+    run:
+       with open(output[0], 'w') as fh:
+           fh.write('\n'.join(SAMPLES))
+           fh.write('\n')
+
 rule quickmirseq:
     input:
-        samples = rules.quickmirseq_symlink.params.samples,
-        config = rules.quickmirseq_config.output
+        samples = expand(join(QUANT_INTERIM, 'quickmirseq', 'fastq', '{sample}.fastq'), sample=SAMPLES),
+        sample_file = join(EXT_DIR, 'quickmirseq', 'all_ids.quickmirseq'),
+        config = join(EXT_DIR, 'quickmirseq', config['organism'], 'quickmirseq.conf')
+    params:
+        fastq_dir = rules.quickmirseq_symlink.params.fastq_dir
+    output:
+        mir_table = join(QUANT_PROCESSED, 'quickmirseq', 'miR.Counts.csv'),
+        isomir_table = join(QUANT_PROCESSED, 'quickmirseq', 'isoform.Counts.csv'),
+        annotation = join(QUANT_PROCESSED, 'quickmirseq', 'readAnnotDistribution.csv'),
+        unmapped = join(QUANT_PROCESSED, 'quickmirseq', 'unmapped.csv')
     singularity:
         'docker://flatberg/quickmirseq:01'
     shell:
         'perl  $QuickMIRSeq/QuickMIRSeq.pl  '
-        '{input.samples} '
+        '{input.sample_file} '
         '{input.config} '

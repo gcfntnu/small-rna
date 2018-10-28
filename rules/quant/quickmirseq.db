@@ -20,7 +20,7 @@ rule quickmirseq_mirbase_index:
     singularity:
         'docker://flatberg/quickmirseq:01'    
     output:
-        join(EXT_DIR, 'quickmirseq', '{org}', 'hairpin.bowtie.log')
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mirna_0_0.fa')
     shell:
         'perl $QuickMIRSeq/QuickMIRSeq-build.pl '
         '--target {params.index} '
@@ -54,47 +54,44 @@ rule quickmirseq_smallrna_index:
 
 rule quickmirseq_mrna_index:
     input:
-        genome = rules.emsembl_cdna_reference.output
+        cdna = rules.emsembl_cdna_reference.output
     params:
         index = join(EXT_DIR, 'quickmirseq', '{org}')
     output:
         join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.fa'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.1.ebwt'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.2.ebwt'),
-        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.3.ebwt'),
-        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.4.ebwt'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.rev.1.ebwt'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.rev.2.ebwt')
     singularity:
         'docker://flatberg/quickmirseq:01' 
     shell:
-        'bowtie-build {input.genome} {params.index}/mrna'
+        'bowtie-build {input.cdna} {params.index}/mrna '
+        '&& cp {input.cdna} {output[0]} '
         
 rule quickmirseq_genome_index:
     input:
-        genome = rules.emsembl_noncoding_reference.output
+        noncoding = rules.emsembl_noncoding_reference.output
     params:
         index_base = join(EXT_DIR, 'quickmirseq', '{org}', 'genome')
     output:
         join(EXT_DIR, 'quickmirseq', '{org}', 'genome.fa'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'genome.1.ebwt'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'genome.2.ebwt'),
-        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.3.ebwt'),
-        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.4.ebwt'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'genome.rev.1.ebwt'),
         join(EXT_DIR, 'quickmirseq', '{org}', 'genome.rev.2.ebwt')
     singularity:
         'docker://flatberg/quickmirseq:01' 
     shell:
-        'bowtie-build {input.genome} {params.index_base}'
+        'bowtie-build {input.noncoding} {params.index_base} '
+        '&& cp {input.noncoding} {output[0]} '
 
-_ORG = ['homo_sapiens', 'mus_musculus', 'rattus_norvegicus']
 
-rule quickmirseq_build_alldb:
+rule quickmirseq_build_db:
     input:
-        expand(rules.quickmirseq_mirbase_index.output, org=_ORG),
-        expand(rules.quickmirseq_smallrna_index.output, org=_ORG),
-        expand(rules.quickmirseq_mrna_index.output, org=_ORG),
-        expand(rules.quickmirseq_genome_index.output, org=_ORG)
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mirna_0_0.fa'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.fa'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.fa'),
+        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.fa')
     output:
         touch(join(EXT_DIR, 'quickmirseq', '{org}', '.done'))

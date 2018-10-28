@@ -24,6 +24,7 @@ URLS =  {'human':
          'fruitfly':
          'fruitfly.tar.gz https://jh.box.com/shared/static/ilrnq62cp06pviir5t0mh85aqet0fmjq.gz'
          }
+
 MIRGE_ORG = {'homo_sapiens': 'human',
            'human': 'human',
            'human': 'human',
@@ -37,7 +38,7 @@ MIRGE_ORG = {'homo_sapiens': 'human',
 rule download_db:
     params:
         url = lambda wildcards: URLS[MIRGE_ORG[wildcards.org]],
-        out = join(EXT_DIR, 'mirge', '{org}')
+        out = lambda wildcards: join(EXT_DIR, 'mirge', MIRGE_ORG[wildcards.org])
     output:
         join(EXT_DIR, 'mirge', '{org}', 'index.Libs', 'human_snorna.3.ebwt')
     shell:
@@ -45,4 +46,4 @@ rule download_db:
 
 rule mirge_db:
     input:
-        expand('data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt', org=['human'])
+        expand('data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt', org=MIRGE_ORG['human'])
