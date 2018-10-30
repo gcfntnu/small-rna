@@ -5,6 +5,8 @@ Additional files that contain reference sequeces in FASTA format. FASTA headers 
 
 This will be added to ncRNA.fas
 """
+from os.path import join
+
 CALIBRATORS_EXTEND = config['filter'].get('calibrators_extend', False)
 UNITAS_REFSEQ = []
 
@@ -19,10 +21,10 @@ if config['filter'].get('filter_contaminants'):
 rule rnacentral_ncrna:
     
         
-rule extra_reference:
+rule unitas_extra_reference:
     input:
         UNITAS_REFSEQ
     output:
-        'data/tmp/smallrna/quant/unitas/refseq.fa'
+        join(QUANT_INTERIM, 'unitas', 'refseq.fa')
     shell:
         'cat {input} > {output}'

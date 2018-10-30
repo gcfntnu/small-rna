@@ -7,10 +7,10 @@ include:
 
 UNITAS_ARGS = ''
 if config.get('filter_ribosomal'):
-    if config['filter']['contaminants_quantifier'] == 'unitas':
+    if config['filter']['ribosomal_quantifier'] == 'unitas':
         UNITAS_ARGS += '--riborase '
 if len(UNITAS_REFSEQ) > 0:
-    UNITAS_ARGS += '-refseq {} '.format(abspath('data/tmp/smallrna/quant/unitas/refseq.fa'))
+    UNITAS_ARGS += '-refseq {} '.format(abspath(join(QUANT_INTERIM, 'unitas', 'refseq.fa')))
 
 _unitas_map = {'homo_sapiens': 'Human',
               'human': 'Human',
@@ -20,7 +20,7 @@ UNITAS_ORG = _unitas_map[config.get('organism', 'homo_sapiens')]
 rule unitas:
     input:
         fastq = get_filtered_fastq,
-        refseq = rules.extra_reference.output
+        refseq = rules.unitas_extra_reference.output
     params:
         tmpdir = join(QUANT_INTERIM, 'unitas'),
         outdir = abspath(join(QUANT_PROCESSED, 'unitas', '{sample}')),
@@ -38,7 +38,7 @@ rule unitas:
         pirna = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
         mirtable_ext= join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
     singularity:
-        'docker://flatberg/unitas:1.6.0'
+        'docker://flatberg/unitas:1.6.1'
     threads:
         4
     shell:
@@ -46,9 +46,7 @@ rule unitas:
         mkdir -p {params.tmpdir}
         RUNDIR=$(pwd)
         cd {params.tmpdir} || exit
-        ls
         unitas.pl -input $RUNDIR/{input.fastq} -s {params.org} -threads {threads} {params.args}
-        ls
         mv UNITAS_*_{wildcards.sample}.*fastq_#1/* {params.outdir}/
         rm -rf UNITAS_*_{wildcards.sample}.*fastq_#1
         """
@@ -119,10 +117,17 @@ rule unitas_annotations:
     input:
         expand(rules.unitas.output.annotation, sample=SAMPLES)
     params:
-        script = srcdir('scripts/unitas_annotationss.py'),
+        script = srcdir('scripts/unitas_annotations.py'),
         out = join(QUANT_PROCESSED, 'unitas', 'unitas.')
     output:
         join(QUANT_PROCESSED, 'unitas', 'unitas.annotations.txt'),
         join(QUANT_PROCESSED, 'unitas', 'unitas.annotations.json')
     shell:
         'python {params.script} -o {params.out} {input} > {output}'
+
+rule unitas_all:
+    input:
+        rules.unitas_mirtable.output,
+        rules.unitas_trftable.output
+    output:
+        touch(join(QUANT_PROCESSED, 'unitas', '.unitas_collected'))

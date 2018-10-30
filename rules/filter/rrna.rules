@@ -18,7 +18,7 @@ rule rrna_filter_bbduk:
         ref = rules.rrna_ribokmers.output
     output:
         fastq = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbduk.clean.fastq'),
-        counts = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbmap.counts')
+        counts = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbduk.counts')
     conda:
         'envs/filter.yaml'
     log:
@@ -26,7 +26,7 @@ rule rrna_filter_bbduk:
     threads:
         8
     shell:
-        'bbduk.sh t={threads} overwrite=true in={input.fastq} k=29 rcomp=f outu={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
+        'bbduk.sh t={threads} overwrite=true in={input.fastq} k=25 rcomp=f outu={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
 
     
 def _filter_clean_fastq(wildcards):

@@ -48,13 +48,13 @@ def update_config2(config, extra_config):
 
 TMPDIR = os.environ.get('TMPDIR', '/tmp')
 # environment variables can override config file
-INTERIM_DIR = environ.get('GCF-INTERIM') or config.get('interim_dir', abspath('data/tmp/'))
+INTERIM_DIR = environ.get('GCF-INTERIM') or config.get('interim_dir', 'data/tmp/')
 makedirs(INTERIM_DIR, exist_ok=True)
-EXT_DIR = environ.get('GCF-EXT') or config.get('ext_dir', abspath('data/ext'))
+EXT_DIR = environ.get('GCF-EXT') or config.get('ext_dir', 'data/ext')
 makedirs(EXT_DIR, exist_ok=True)
-FASTQ_DIR =  environ.get('GCF-FASTQ') or config.get('fastq_dir', abspath('data/raw/fastq'))
+FASTQ_DIR =  environ.get('GCF-FASTQ') or config.get('fastq_dir','data/raw/fastq')
 makedirs(FASTQ_DIR, exist_ok=True)
-PROCESSED_DIR =  environ.get('GCF-PROCESSED') or config.get('processed_dir', abspath('data/processed'))
+PROCESSED_DIR =  environ.get('GCF-PROCESSED') or config.get('processed_dir', 'data/processed')
 makedirs(PROCESSED_DIR, exist_ok=True)
 
 extra_conf_fn = srcdir('small-rna.config')

@@ -28,7 +28,7 @@ RUN cpanm install LWP::Simple \
     Archive::Extract \
     Scalar::Util
  
-ENV UNITAS_VERSION 1.6.0
+ENV UNITAS_VERSION 1.6.1
 RUN wget --quiet http://www.smallrnagroup.uni-mainz.de/software/unitas_${UNITAS_VERSION}.zip
 RUN unzip unitas_${UNITAS_VERSION}.zip -d /opt
 RUN rm unitas_${UNITAS_VERSION}.zip

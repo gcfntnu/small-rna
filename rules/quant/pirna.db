@@ -19,9 +19,9 @@ rule regulatoryrna_fasta:
     output:
         'data/ext/regulatoryrna/{org}/pirna.fa'
     shell:
-        'wget -O- {params.url}/{params.mirbase_org}.fa.gz | gunzip -C > {output}'
+        'wget -O- {params.url}/{params.rtr_org}.fa.gz | gunzip -C > {output}'
         
-rule pirna_bank_fasta:
+rule pirnabank_fasta:
     params:
         url = 'http://pirnabank.ibab.ac.in/downloads/all/human_all.zip'
     output:
@@ -30,5 +30,3 @@ rule pirna_bank_fasta:
         """
         wget {params.url} -O- | zcat | sed 's/U/T/g' > {output}
         """
-        
-'bowtie mirna.fa -n 0 -f --norc -S SeqToAnnot.fasta+ 1> SeqToAnnot.sam 2> SeqToAnnot.log'
