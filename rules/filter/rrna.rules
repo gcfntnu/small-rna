@@ -21,6 +21,8 @@ rule rrna_filter_bbduk:
         counts = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbduk.counts')
     conda:
         'envs/filter.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     log:
         'logs/{sample}/filter.rrna.bbduk.log'
     threads:

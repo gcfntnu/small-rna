@@ -18,7 +18,7 @@ rule quickmirseq_mirbase_index:
         index = join(EXT_DIR, 'quickmirseq', '{org}'),
         args = '--cutoff 0 --library stranded --extension5 4 --extension3 5'
     singularity:
-        'docker://flatberg/quickmirseq:01'    
+        'docker://flatberg/quickmirseq:01'
     output:
         join(EXT_DIR, 'quickmirseq', '{org}', 'mirna_0_0.fa')
     shell:
@@ -71,7 +71,7 @@ rule quickmirseq_mrna_index:
         
 rule quickmirseq_genome_index:
     input:
-        noncoding = rules.emsembl_noncoding_reference.output
+        noncoding = rules.emsembl_dna_reference.output
     params:
         index_base = join(EXT_DIR, 'quickmirseq', '{org}', 'genome')
     output:
@@ -86,12 +86,18 @@ rule quickmirseq_genome_index:
         'bowtie-build {input.noncoding} {params.index_base} '
         '&& cp {input.noncoding} {output[0]} '
 
-
+rule quickmirseq_download:
+    input:
+        expand(rules.quickmirseq_mirbase_index.input, org=config['organism']),
+        expand(rules.quickmirseq_smallrna_index.input, org=config['organism']),
+        expand(rules.quickmirseq_mrna_index.input, org=config['organism'])
+        #expand(rules.quickmirseq_genome_index.input, org=config['organism'])
+        
 rule quickmirseq_build_db:
     input:
-        join(EXT_DIR, 'quickmirseq', '{org}', 'mirna_0_0.fa'),
-        join(EXT_DIR, 'quickmirseq', '{org}', 'smallRNA.fa'),
-        join(EXT_DIR, 'quickmirseq', '{org}', 'mrna.fa'),
-        join(EXT_DIR, 'quickmirseq', '{org}', 'genome.fa')
+        join(EXT_DIR, 'quickmirseq', config['organism'], 'mirna_0_0.fa'),
+        join(EXT_DIR, 'quickmirseq', config['organism'], 'smallRNA.fa'),
+        join(EXT_DIR, 'quickmirseq', config['organism'], 'mrna.fa')
+        #join(EXT_DIR, 'quickmirseq', config['organism'], 'genome.fa')
     output:
-        touch(join(EXT_DIR, 'quickmirseq', '{org}', '.done'))
+        touch(join(EXT_DIR, 'quickmirseq', config['organism'], '.done'))

@@ -106,6 +106,8 @@ rule contaminants_index_bowtie:
         join(EXT_DIR, 'contaminants', 'index', 'cont.rev.2.ebwt'),
     conda:
         'envs/contaminants.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     shell:
         'bowtie-build {input} {params.index}'
         
@@ -119,6 +121,8 @@ rule contaminants_filter_bowtie:
         sam = temp(join(FILTER_INTERIM, '{sample}', '{sample}.contaminants.sam'))
     conda:
         'envs/contaminants.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     params:
         args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
         index = rules.contaminants_index_bowtie.params.index
@@ -149,6 +153,8 @@ rule contaminants_filter_bbduk:
         args = 'rcomp=f k=27'
     conda:
         'envs/calibrators.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     log:
         'logs/{sample}/filter.contaminants.bbduk.log'
     threads:

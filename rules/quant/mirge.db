@@ -44,6 +44,21 @@ rule download_db:
     shell:
         'wget -qO- {params.url} | tar xvz --strip-components 1 -C {params.out}'
 
+rule add_trf_human:
+    input:
+        rules.download_db.output
+    params:
+        url = 'https://github.com/mhalushka/miRge/files/2428450/missingtrffiles.zip',
+        outdir = join(EXT_DIR, 'mirge', '{org}', 'annotation.Libs')
+    output:
+        join(EXT_DIR, 'mirge', '{org}', 'annotation.Libs', 'human_trna.str')
+    shell:
+        """
+        wget {params.url}
+        unzip missingtrffiles.zip -d {params.outdir}
+        rm missingtrffiles.zip
+        """
+
 rule mirge_db:
     input:
         expand('data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt', org=MIRGE_ORG['human'])

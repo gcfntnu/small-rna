@@ -70,6 +70,8 @@ rule calibrators_bowtie_build_index:
         index = join(CAL_DIR, 'index', 'bowtie', 'calibrators')
     conda:
         'envs/calibrators.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     shell:
         'bowtie-build {input} {params.index}'
 
@@ -87,6 +89,8 @@ rule calibrators_bowtie2_build_index:
         index = join(CAL_DIR, 'index', 'bowtie2', 'calibrators')
     conda:
         'envs/calibrators.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     shell:
         'bowtie2-build {input} {params.index}'
 
@@ -99,6 +103,8 @@ rule calibrators_filter_bowtie:
         counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bowtie.counts')
     conda:
         'envs/calibrators.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     params:
         args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
         index = rules.calibrators_bowtie_build_index.params.index
@@ -126,6 +132,8 @@ rule calibrators_filter_bowtie2:
         counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bowtie2.counts')
     conda:
         'envs/calibrators.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     params:
         args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
         index = rules.calibrators_bowtie2_build_index.params.index
@@ -154,6 +162,8 @@ rule calibrators_bbmap_build_index:
         index = join(CAL_DIR, 'index', 'bbmap')
     conda:
         'envs/calibrators.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     shell:
         'bbmap.sh ref={input} path={params.index}'
 
@@ -166,6 +176,8 @@ rule calibrators_filter_bbduk:
         counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bbduk.counts')
     conda:
         'envs/calibrators.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     threads:
         4
     log:

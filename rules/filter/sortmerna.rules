@@ -20,6 +20,10 @@ rule rrna_sortmerna:
         args = '--fastx --sam ',
         ref = _SM_REF,
         aligned = ''
+    conda:
+        'envs/sortmerna.yaml'    
+    singularity:
+        'docker://flatberg/filter:0.1'
     shell:
         'sortmerna '
         '--reads {input.fastq} '

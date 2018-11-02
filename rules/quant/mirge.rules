@@ -23,11 +23,11 @@ rule mirge_symlink:
 rule mirge_annotate:
     input:
         fastq = expand(rules.mirge_symlink.output, sample=SAMPLES),
-        db = lambda wildcards: join(EXT_DIR, 'mirge', MIRGE_ORG[wildcards.org], 'index.Libs', MIRGE_ORG[wildcards.org] + '_snorna.3.ebwt')
+        db = lambda wildcards: join(EXT_DIR, 'mirge', MIRGE_ORG[wildcards.org], 'annotation.Libs', 'human_trna.str') #fixme: need to work on other than human
     params:
         lib = join(EXT_DIR, 'mirge'),
         org = lambda wildcards: MIRGE_ORG[wildcards.org],
-        args = '-di -ai -gff ',
+        args = '-di -ai -gff -ex 0 -trf',
         tmp_out = join(INTERIM_DIR, 'mirge','{org}','{db}'),
         out = join(QUANT_PROCESSED, 'mirge','{org}','{db}')
     output:

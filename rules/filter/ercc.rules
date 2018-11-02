@@ -12,9 +12,9 @@ rule ercc:
         """
         wget {params.url}
         unzip ERCC92.zip
-        rm ERCC92.zip
         mv ERCC92.gtf {output.ercc_gtf}
         mv ERCC92.fa {output.ercc_fa}
+        rm ERCC92.zip
         """
 
 rule fix_ercc_gtf:

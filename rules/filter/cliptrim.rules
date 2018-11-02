@@ -12,7 +12,7 @@ rule filter_adapter_atropos:
     params:
         args = '--mirna'
     singularity:
-        'docker://flatberg/test:first-test'
+        'docker://flatberg/filter:0.1'
     threads:
         4
     log:
@@ -38,6 +38,8 @@ rule filter_bioscientific_trimmed:
         4
     conda:
         'envs/filter.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     log:
         html = 'logs/{sample}/fastp.trimmed.html',
         json = 'logs/{sample}/fastp.trimmed.json'
@@ -60,6 +62,8 @@ rule filter_bioscientific_untrimmed:
         4
     conda:
         'envs/filter.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     log:
         html = 'logs/{sample}/fastp.untrimmed.html',
         json = 'logs/{sample}/fastp.untrimmed.json'
@@ -91,6 +95,8 @@ rule filter_truseq:
         4
     conda:
         'envs/filter.yaml'
+    singularity:
+        'docker://flatberg/filter:0.1'
     log:
         html = 'logs/{sample}/fastp.truseq.html',
         json = 'logs/{sample}/fastp.json'

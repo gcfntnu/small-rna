@@ -30,7 +30,7 @@ rule quickmirseq_config:
         fastq_dir = rules.quickmirseq_symlink.params.fastq_dir,
         species = '{org}',
         rna_db = abspath(join(EXT_DIR, 'quickmirseq', '{org}')),
-        dna_bowtie_index = abspath(join(EXT_DIR, 'quickmirseq', '{org}', 'genome')),
+        #dna_bowtie_index = abspath(join(EXT_DIR, 'quickmirseq', '{org}', 'genome')),
         output = join(QUANT_PROCESSED, 'quickmirseq')
     threads:
         8
@@ -40,7 +40,7 @@ rule quickmirseq_config:
         """
         echo SPECIES={params.species} >> {output}
         echo RNA_BOWTIE_INDEX={params.rna_db} >> {output}
-        echo GENOME_BOWTIE_INDEX={params.dna_bowtie_index} >> {output}
+        #echo GENOME_BOWTIE_INDEX={params.dna_bowtie_index} >> {output}
         echo FASTQ_DIR={params.fastq_dir} >> {output}
         echo CPU={threads} >> {output}
         echo STRAND=1 >> {output}
