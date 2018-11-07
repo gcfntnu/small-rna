@@ -14,7 +14,8 @@ RUN apt-get update --fix-missing && \
     cpanminus \
     build-essential \
     gcc-multilib \
-    dos2unix
+    dos2unix \
+    sed
     
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -35,6 +36,8 @@ RUN rm unitas_${UNITAS_VERSION}.zip
 WORKDIR /opt/unitas
 RUN dos2unix unitas_${UNITAS_VERSION}.pl
 RUN chmod +755 unitas_${UNITAS_VERSION}.pl
-RUN ln -s unitas_${UNITAS_VERSION}.pl unitas.pl
+RUN sed 's/head>30/head>1000/' unitas_1.6.1.pl > unitas_1.6.1.pl.mod
+RUN sed -s 's/head,0,27/head,0,1000/' unitas_1.6.1.pl.mod > unitas_1.6.1.pl.mod
+RUN ln -s unitas_${UNITAS_VERSION}.pl.mod unitas.pl
 ENV PATH /opt/unitas/:$PATH
 
