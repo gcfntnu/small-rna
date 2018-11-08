@@ -51,6 +51,16 @@ rule unitas:
         rm -rf UNITAS_*_{wildcards.sample}.*fastq_#1
         """
 
+rule unitas_annotation2yaml:
+    input:
+        rules.unitas.output.annotation
+    params:
+        script = srcdir('scripts/unitas_annotation2json.py')
+    output:
+        join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.annotation_summary.json')
+    shell:
+        'python {params.script} {input} > {output}'
+
 rule unitas_mirtable:
     input:
         expand(rules.unitas.output.mirtable, sample=SAMPLES)
@@ -85,9 +95,9 @@ rule unitas_isotrftable:
     input:
         expand(rules.unitas.output.trf_table_ext, sample=SAMPLES)
     params:
-        script = srcdir('scripts/unitas_trftable.py')
+        script = srcdir('scripts/unitas_isotrftable.py')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.trf.counts')
+        join(QUANT_PROCESSED, 'unitas', 'unitas.isotrf.counts')
     shell:
         'python {params.script} {input} > {output}'
 
@@ -120,14 +130,16 @@ rule unitas_annotations:
         script = srcdir('scripts/unitas_annotations.py'),
         out = join(QUANT_PROCESSED, 'unitas', 'unitas.')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.annotations.txt'),
-        join(QUANT_PROCESSED, 'unitas', 'unitas.annotations.json')
+        join(QUANT_PROCESSED, 'unitas', 'unitas.annotations.txt')
     shell:
         'python {params.script} -o {params.out} {input} > {output}'
 
 rule unitas_all:
     input:
         rules.unitas_mirtable.output,
-        rules.unitas_trftable.output
-    output:
-        touch(join(QUANT_PROCESSED, 'unitas', '.unitas_collected'))
+        rules.unitas_trftable.output,
+        rules.unitas_isomirtable.output,
+        rules.unitas_isotrftable.output,
+        rules.unitas_allhits.output,
+        rules.unitas_modifications.output,
+        rules.unitas_annotations.output

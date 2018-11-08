@@ -21,35 +21,56 @@ UniVec: NCBI-supplied database of vector, adapter, linker, and primer sequences 
 UniVec_Core: A subset of UniVec chosen to minimize false positive hits to the vector database
 
 """
+from os.path import join
 
+_KRAKEN_CONFIG = config['rop']['kraken']
+
+def get_kraken_db():
+    if str(_KRAKEN_CONFIG['version']) == '1':
+        if _KRAKEN_CONFIG['db'] == 'minikraken_8GB':
+            return rules.minikraken_8gb.output
+        elif _KRAKEN_CONFIG['db'] == 'minikraken_4GB':
+            return rules.minikraken_4gb.output
+        elif _KRAKEN_CONFIG['db'] == 'custom-bac-k25':
+            return rules.custom_k25.output
+        elif os.path.exists(_KRAKEN_CONFIG['db']):
+            return _KRAKEN_CONFIG['db']
+        else:
+            raise NotImplementedError
+    else:
+        raise NotImplementedError
+        
 rule minikraken_8gb:
     output:
-        'data/ext/kraken/minikraken_8GB/database.idx'
+        join(EXT_DIR, 'kraken', 'minikraken_8GB', 'database.idx')
     params:
-        db = 'data/ext/minikraken_8GB',
+        db = join(EXT_DIR, 'minikraken_8GB'),
         url = 'https://ccb.jhu.edu/software/kraken/dl/minikraken_20171019_8GB.tgz'
     shell:
         'curl {params.url} | tar xz -C {params.db} --strip-components=1'
         
 rule minikraken_4gb:
     output:
-        'data/ext/kraken/minikraken_4GB/database.idx'
+        join(EXT_DIR, 'kraken', 'minikraken_4GB', 'database.idx')
     params:
-        db = 'data/ext/minikraken_4GB',
+        db = join(EXT_DIR, 'minikraken_4GB'),
         url = 'https://ccb.jhu.edu/software/kraken/dl/minikraken_20171019_4GB.tgz'
     shell:
         'curl {params.url} | tar xz -C {params.db} --strip-components=1'
 
+rule custom_k25:
+    output:
+        
 rule kraken2_taxonomy:
     output:
-        'data/ext/kraken2/db/taxonomy/names.dmp'
+        join(EXT_DIR, 'kraken2', 'db', 'taxonomy', 'names.dmp')
     params:
-        db = 'data/ext/kraken2/db/'
+        db = join(EXT_DIR, 'kraken2', 'db')
     shell:
         'kraken2-build --download-taxonomy --db {params.db}'
 
 rule kraken2_reference_library:
     output:
-        'data/ext/kraken2/db/{kraken_ref}'
+        join(EXT_DIR, 'kraken2', 'db', '{kraken_ref}')
     shell:
         'kraken2-build --download {kraken_ref}  --db {output}'

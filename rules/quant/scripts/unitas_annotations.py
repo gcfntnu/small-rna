@@ -3,6 +3,9 @@ import sys
 import os
 import glob
 import argparse
+import io
+
+import pandas as pd
 
 def samplesheet_ids(fn, sep='\t'):
     sample_ids = []
@@ -15,6 +18,34 @@ def samplesheet_ids(fn, sep='\t'):
             sample_ids.append(line.split('\t')[0])
         return sample_ids
 
+def fill(col):
+    P = None
+    for i, e in enumerate(col):
+        if pd.isnull(e):
+            col.iloc[i] = P
+        else:
+            P = e
+    return col
+
+def file2pandas(fn):
+    with open(fn) as fh:
+        txt = fh.read()
+    txt = txt.replace('   ', ';')
+    header = '\t'.join(['Level1', 'Level2', 'Level3', 'Count'])
+    new_lines = [header]
+    for line in txt.split('\n'):
+        if not line:
+            break
+        desc, count = line.split('\t')
+        level = desc.count(';')
+        desc  = desc.replace(';', '\t')
+        desc += '\t'*(2-level)
+        new_lines.append(desc + '\t' + count)
+    txt = '\n'.join(new_lines)
+    df = pd.read_csv(io.StringIO(txt), sep='\t')
+    df = df.apply(fill, axis=0)
+    return df
+
 def argparser():
     parser = argparse.ArgumentParser(description='Aggregate unitas tables')
     parser.add_argument('--sample-sheet', help='Optional sample sheet. Will subset aggregated table if needed', dest='samples')
@@ -26,11 +57,15 @@ def argparser():
 if __name__ == '__main__':
     args = argparser()
 
+    
     import pandas as pd
     df_list = []
+    
+
+    
     for fn in args.filenames:
         sample_id = os.path.dirname(fn).split(os.path.sep)[-1]
-        df = pd.read_csv(fn, sep='\t')
+        df = file2pandas(fn)
         df['Sample_ID'] = [sample_id] * df.shape[0]
         df_list.append(df)
     DF = pd.concat(df_list, axis=0, join='outer', sort=False)
@@ -38,6 +73,6 @@ if __name__ == '__main__':
         out_fn = sys.stdout
     else:
         out_fn = args.output
-    DF.fillna(0, inplace=True)
+    
     DF.to_csv(out_fn, sep='\t', index=False)
     

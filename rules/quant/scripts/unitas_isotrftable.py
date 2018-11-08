@@ -31,7 +31,7 @@ if __name__ == '__main__':
     df_list = []
     for fn in args.filenames:
         sample_id = os.path.dirname(fn).split(os.path.sep)[-1]
-        df = pd.read_csv(fn, sep='\t')
+        df = pd.read_csv(fn, sep='\t', skiprows=3)
         df['Sample_ID'] = [sample_id] * df.shape[0]
         df_list.append(df)
     DF = pd.concat(df_list, axis=0, join='outer', sort=False)
