@@ -38,7 +38,7 @@ rule unitas:
         pirna = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
         mirtable_ext= join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
     singularity:
-        'docker://flatberg/unitas:1.6.1'
+        'docker://gcfntnu/unitas:1.7.0'
     threads:
         4
     shell:

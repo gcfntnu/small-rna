@@ -2,9 +2,10 @@
 import shutil
 from os.path import join, abspath
 
+#FIXME: get org + db from config file
+
 include:
     'mirge.db'
-
 
 rule mirge_symlink:
     input:
@@ -28,7 +29,7 @@ rule mirge_annotate:
         lib = join(EXT_DIR, 'mirge'),
         org = lambda wildcards: MIRGE_ORG[wildcards.org],
         args = '-di -ai -gff -ex 0 -trf',
-        tmp_out = join(INTERIM_DIR, 'mirge','{org}','{db}'),
+        tmp_out = join(QUANT_INTERIM, 'mirge','{org}','{db}'),
         out = join(QUANT_PROCESSED, 'mirge','{org}','{db}')
     output:
         mirtable = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'miR.Counts.csv'),
@@ -37,7 +38,7 @@ rule mirge_annotate:
         umapped = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'unmapped.csv'),
         a2i = join(QUANT_PROCESSED, 'mirge','{org}','{db}', 'a2IEditing.report.newform.csv')
     singularity:
-        'docker://flatberg/mirge:2.0.6'
+        'docker://gcfntnu/mirge:2.0'
     conda:
         'envs/mirge.yaml'
     threads:

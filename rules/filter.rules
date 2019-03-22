@@ -3,6 +3,7 @@ import os
 
 FILTER_INTERIM = join(INTERIM_DIR, 'smallrna', 'filtered')
 FILTER_PROCESSED = join(PROCESSED_DIR, 'smallrna', 'filtered')
+FASTQ_DIR = config.get('fastq_dir', 'data/raw/fastq')
 
 extra_conf_fn = srcdir('filter.config')
 if os.path.exists(extra_conf_fn):
@@ -11,7 +12,7 @@ if os.path.exists(extra_conf_fn):
         update_config2(config, c)
 
 def _filter_get_raw(wildcards):
-    return config['samples'][wildcards.sample]['R1']
+    return join(FASTQ_DIR, config['samples'][wildcards.sample]['R1'])
        
 include:
     'filter/cliptrim.rules'
