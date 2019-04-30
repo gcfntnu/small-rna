@@ -39,7 +39,7 @@ def _filter_clean_fastq(wildcards):
             return join(FILTER_INTERIM, '{0}', '{0}.rrna.{1}.clean.fastq').format(wildcards.sample, ribo_quant)
         elif ribo_quant == 'unitas':
             assert(config['filter'].get('quant') == 'unitas')
-            return _filter_get_trimmed(wildcards)
+            return _filter_get_contaminants_clean(wildcards)
         else:
             raise ValueError('ribosomal quantifier option not valid: {}'.format(ribo_quant))
     else:

@@ -6,7 +6,7 @@ include:
     'unitas.db'
 
 UNITAS_ARGS = ''
-if config.get('filter_ribosomal'):
+if config['filter'].get('filter_ribosomal'):
     if config['filter']['ribosomal_quantifier'] == 'unitas':
         UNITAS_ARGS += '--riborase '
 if len(UNITAS_REFSEQ) > 0:
@@ -14,8 +14,11 @@ if len(UNITAS_REFSEQ) > 0:
 
 _unitas_map = {'homo_sapiens': 'Human',
               'human': 'Human',
-              'hsa': 'Human'}
-UNITAS_ORG = _unitas_map[config.get('organism', 'homo_sapiens')]
+               'hsa': 'Human',
+               'mus_musculus': 'Mouse',
+               'mouse': 'Mouse',
+               'mmu': 'Mouse'}
+UNITAS_ORG = _unitas_map[config.get('organism')]
 
 rule unitas:
     input:
@@ -40,7 +43,7 @@ rule unitas:
     singularity:
         'docker://gcfntnu/unitas:1.7.0'
     threads:
-        4
+        2
     shell:
         """
         mkdir -p {params.tmpdir}

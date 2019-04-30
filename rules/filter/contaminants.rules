@@ -170,7 +170,7 @@ def _filter_get_contaminants_clean(wildcards):
             return join(FILTER_INTERIM, wildcards.sample, '{}.contaminants.{}.clean.fastq'.format(wildcards.sample, cnt_quant))
         elif cnt_quant == 'unitas':
             assert(config['filter'].get('quant') == 'unitas')
-            return _filter_get_trimmed(wildcards)
+            return _filter_get_calibrator_clean(wildcards)
         else:
             raise ValueError('contaminant quantifier option not valid: {}'.format(quant))
-    return _filter_get_trimmed(wildcards)
+    return _filter_get_calibrator_clean(wildcards)
