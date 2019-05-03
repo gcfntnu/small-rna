@@ -1,5 +1,13 @@
 #!/usr/bin env python
-ORG = 'Human'
+"""
+
+Parses the unitas *.hits_per_target.txt files.
+
+Thsi file contains all hits in the cdna + refseq fasta files.
+
+"""
+
+
 import sys
 import os
 import glob
@@ -43,4 +51,10 @@ if __name__ == '__main__':
         out_fn = args.output
     DF.fillna(0, inplace=True)
     DF.to_csv(out_fn, sep='\t', index=False)
+
+    # pivot counts
+    X = df.pivot(index='Sample_ID', columns='TRANSCRIPT_NAME', values="READ_COUNT")
+    X = X.fillna(0)
     
+    #class summary
+    C = df.pivot_table(index='Sample_ID', columns='TRANSCRIPT_CLASS', values="READ_COUNT")
