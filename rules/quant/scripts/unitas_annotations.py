@@ -4,6 +4,8 @@ import os
 import glob
 import argparse
 import io
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 import pandas as pd
 
@@ -49,7 +51,7 @@ def file2pandas(fn):
 def argparser():
     parser = argparse.ArgumentParser(description='Aggregate unitas tables')
     parser.add_argument('--sample-sheet', help='Optional sample sheet. Will subset aggregated table if needed', dest='samples')
-    parser.add_argument('-o ', '--output', help='Output directory')
+    parser.add_argument('-o ', '--output', help='Output prefix')
     parser.add_argument('filenames', nargs='+')
     args = parser.parse_args()
     return args
@@ -72,7 +74,7 @@ if __name__ == '__main__':
     if args.output is None:
         out_fn = sys.stdout
     else:
-        out_fn = args.output
-    
+        out_fn = os.path.join(args.output, 'annotations.txt')
+                                
     DF.to_csv(out_fn, sep='\t', index=False)
     

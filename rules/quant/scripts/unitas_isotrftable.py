@@ -3,6 +3,8 @@ import sys
 import os
 import glob
 import argparse
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 def samplesheet_ids(fn, sep='\t'):
     sample_ids = []

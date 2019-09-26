@@ -4,6 +4,8 @@ import os
 import glob
 import argparse
 from collections import defaultdict
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 from snakemake.logging import logger
 
@@ -50,9 +52,11 @@ if __name__ == '__main__':
             #    break
             
     df_lists = defaultdict(list)
+    logger.info(args.filenames)
     for fn in args.filenames:
         sample_id = os.path.dirname(fn).split(os.path.sep)[-1]
         with open(fn) as fh:
+            logger.info(fn)
             for name, df in blocked(fh):
                 if name == 'Modifications per position':
                     if not df.empty:
@@ -91,7 +95,6 @@ if __name__ == '__main__':
             continue
         DF = pd.concat(dfl, axis=0, join='outer', sort=False)
         DF.fillna(0, inplace=True)
-        fn = args.output + basename + '.counts'
-        DF.to_csv(fn, sep='\t', index=False)
-        logger.info('wrote: {}'.format(fn))
-    
+        out = args.output + basename + '.counts'
+        DF.to_csv(out, sep='\t', index=False)
+        logger.info('wrote: {}'.format(out))
