@@ -13,7 +13,8 @@ import os
 import glob
 import argparse
 
-
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 def samplesheet_ids(fn, sep='\t'):
     sample_ids = []
@@ -29,7 +30,7 @@ def samplesheet_ids(fn, sep='\t'):
 def argparser():
     parser = argparse.ArgumentParser(description='Aggregate unitas tables')
     parser.add_argument('--sample-sheet', help='Optional sample sheet. Will subset aggregated table if needed', dest='samples')
-    parser.add_argument('-o ', '--output', help='Output filename. Will default to stdout.')
+    parser.add_argument('-o ', '--output', required=True, help='Output filename. Required')
     parser.add_argument('filenames', nargs='+')
     args = parser.parse_args()
     return args
@@ -52,9 +53,23 @@ if __name__ == '__main__':
     DF.fillna(0, inplace=True)
     DF.to_csv(out_fn, sep='\t', index=False)
 
-    # pivot counts
-    X = df.pivot(index='Sample_ID', columns='TRANSCRIPT_NAME', values="READ_COUNT")
-    X = X.fillna(0)
     
+    # pivot counts
+    combined_name = ['|'.join(e) for e in zip(df.TRANSCRIPT_CLASS, df.TRANSCRIPT_NAME)]
+    df['combined_name'] = combined_name
+    if len(set(df.combined_name)) != df.shape[0]:
+        sys.stderr.write('ERROR: TRANSCRIPT_CLASS + TRANSCRIPT_NAME not unique!')
+        sys.stderr.write(str(df.head()))
+        from collections import Counter
+        c = Counter(df.combined_name)
+        sys.stderr.write(str(c.most_common(n=1)))
+        sys.exit()
+    X = df.pivot(index='Sample_ID', columns='combined_name', values="READ_COUNT")
+    X = X.fillna(0)
+    if not args.output is None:
+        X.to_csv(out_fn + '.tab', sep='\t', index=False)
+        
     #class summary
-    C = df.pivot_table(index='Sample_ID', columns='TRANSCRIPT_CLASS', values="READ_COUNT")
+    if not args.output is None:
+        C = DF.pivot_table(index='Sample_ID', columns='TRANSCRIPT_CLASS', values="READ_COUNT")
+        C.to_csv(out_fn + '.class_summary', sep='\t', index=True)
