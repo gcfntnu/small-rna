@@ -1,4 +1,10 @@
+"""
+Convert the annotation summary to json format (unitas.annotation_summary.txt)
+"""
+
 import sys
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 def file2dict(fn):
     tree = {}
