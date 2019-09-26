@@ -1,6 +1,8 @@
 #-*- mode:snakemake -*-
 
 from os.path import join, abspath
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 include:
     'unitas.db'
@@ -33,7 +35,7 @@ rule unitas:
         html = join(QUANT_PROCESSED, 'unitas', '{sample}', 'results.html'),
         trftable = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'),
         annotation = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.annotation_summary.txt'),
-        full_annotation= join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'),
+        full_annotation = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'),
         target_hits = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.hits_per_target.txt'),
         modifications = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)),
         trf_table_ext = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.txt'),
@@ -113,7 +115,7 @@ rule unitas_allhits:
     output:
         join(QUANT_PROCESSED, 'unitas', 'unitas.allhits.counts')
     shell:
-        'python {params.script} {input} > {output}'
+        'python {params.script} {input} --output {output}'
         
 rule unitas_modifications:
     input:
@@ -122,21 +124,32 @@ rule unitas_modifications:
         script = srcdir('scripts/unitas_modifications.py'),
         out = join(QUANT_PROCESSED, 'unitas', 'unitas.')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.modification_per_position.txt')
+        join(QUANT_PROCESSED, 'unitas', 'unitas.modification_per_position.counts'),
+        join(QUANT_PROCESSED, 'unitas', 'unitas.internal_modification.counts')
     shell:
-        'python {params.script} -o {params.out} {input} > {output}'
+        'python {params.script} -o {params.out} {input}'
         
 rule unitas_annotations:
     input:
         expand(rules.unitas.output.annotation, sample=SAMPLES)
     params:
-        script = srcdir('scripts/unitas_annotations.py'),
-        out = join(QUANT_PROCESSED, 'unitas', 'unitas.')
+        script = srcdir('scripts/unitas_annotations.py')
     output:
         join(QUANT_PROCESSED, 'unitas', 'unitas.annotations.txt')
     shell:
-        'python {params.script} -o {params.out} {input} > {output}'
+        'python {params.script} {input} > {output}'
 
+rule unitas_allfeatures:
+    input:
+        expand(rules.unitas.output.full_annotation, sample=SAMPLES)
+    params:
+        script = srcdir('scripts/unitas_feature_counts.py')
+        
+    output:
+        join(QUANT_PROCESSED, 'unitas', 'unitas.featurecounts.counts')
+    shell:
+        'python {params.script} --frac-counts {input} > {output}'
+        
 rule unitas_all:
     input:
         rules.unitas_mirtable.output,
