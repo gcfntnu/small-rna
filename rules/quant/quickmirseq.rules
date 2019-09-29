@@ -25,12 +25,12 @@ rule quickmirseq_symlink:
             
 rule quickmirseq_config:
     input:
-        db = join(EXT_DIR, 'quickmirseq', '{org}', '.done')
-    params: 
+        db = join(EXT_DIR, 'quickmirseq', '.db_done')
+    params:
         fastq_dir = rules.quickmirseq_symlink.params.fastq_dir,
-        species = '{org}',
-        rna_db = abspath(join(EXT_DIR, 'quickmirseq', '{org}')),
-        #dna_bowtie_index = abspath(join(EXT_DIR, 'quickmirseq', '{org}', 'genome')),
+        species = config['organism'],
+        rna_db = abspath(join(EXT_DIR, 'quickmirseq', ORG)),
+        dna_bowtie_index = abspath(join(EXT_DIR, 'quickmirseq', ORG, 'genome')),
         output = join(QUANT_PROCESSED, 'quickmirseq')
     threads:
         8
@@ -40,7 +40,7 @@ rule quickmirseq_config:
         """
         echo SPECIES={params.species} >> {output}
         echo RNA_BOWTIE_INDEX={params.rna_db} >> {output}
-        #echo GENOME_BOWTIE_INDEX={params.dna_bowtie_index} >> {output}
+        echo GENOME_BOWTIE_INDEX={params.dna_bowtie_index} >> {output}
         echo FASTQ_DIR={params.fastq_dir} >> {output}
         echo CPU={threads} >> {output}
         echo STRAND=1 >> {output}
@@ -56,7 +56,7 @@ rule quickmirseq_config:
         echo MAX_MIRNA_LENGTH=28 >> {output}
         echo EXTENSION3=5 >> {output}
         echo EXTENSION5=4 >> {output}
-        echo keepTemp=no >> {output}
+        echo keepTemp=yes >> {output}
         echo UNIQUE_LIBRARY_ANALYSIS=yes >> {output}
         echo OFFSET_ANALYSIS=yes >> {output}
         """    
@@ -87,3 +87,7 @@ rule quickmirseq:
         'perl  $QuickMIRSeq/QuickMIRSeq.pl  '
         '{input.sample_file} '
         '{input.config} '
+
+rule quickmirseq_all:
+    input:
+        rules.quickmirseq.output

@@ -29,7 +29,7 @@ rule unitas:
     params:
         tmpdir = join(QUANT_INTERIM, 'unitas'),
         outdir = abspath(join(QUANT_PROCESSED, 'unitas', '{sample}')),
-        args = UNITAS_ARGS + ' -species_miR_only',
+        args = UNITAS_ARGS + ' -species_miR_only -keep_temp ',
         org  = config.get('organism', 'homo_sapiens')
     output:
         html = join(QUANT_PROCESSED, 'unitas', '{sample}', 'results.html'),
@@ -68,7 +68,7 @@ rule unitas_annotation2yaml:
 
 rule unitas_mirtable:
     input:
-        expand(rules.unitas.output.mirtable, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_mirtable.py')
     output:
@@ -78,7 +78,7 @@ rule unitas_mirtable:
         
 rule unitas_isomirtable:
     input:
-        expand(rules.unitas.output.mirtable_ext, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_isomirtable.py')
     output:
@@ -88,7 +88,7 @@ rule unitas_isomirtable:
 
 rule unitas_trftable:
     input:
-        expand(rules.unitas.output.trftable, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_trftable.py')
     output:
@@ -98,7 +98,7 @@ rule unitas_trftable:
         
 rule unitas_isotrftable:
     input:
-        expand(rules.unitas.output.trf_table_ext, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_isotrftable.py')
     output:
@@ -108,7 +108,7 @@ rule unitas_isotrftable:
 
 rule unitas_allhits:
     input:
-        expand(rules.unitas.output.target_hits, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.hits_per_target.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_allhits.py')
         
@@ -119,7 +119,7 @@ rule unitas_allhits:
         
 rule unitas_modifications:
     input:
-        expand(rules.unitas.output.modifications, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_modifications.py'),
         out = join(QUANT_PROCESSED, 'unitas', 'unitas.')
@@ -131,7 +131,7 @@ rule unitas_modifications:
         
 rule unitas_annotations:
     input:
-        expand(rules.unitas.output.annotation, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.annotation_summary.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_annotations.py')
     output:
@@ -141,7 +141,7 @@ rule unitas_annotations:
 
 rule unitas_allfeatures:
     input:
-        expand(rules.unitas.output.full_annotation, sample=SAMPLES)
+        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_feature_counts.py')
         

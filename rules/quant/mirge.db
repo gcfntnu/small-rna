@@ -25,22 +25,23 @@ URLS =  {'human':
          'fruitfly.tar.gz https://jh.box.com/shared/static/ilrnq62cp06pviir5t0mh85aqet0fmjq.gz'
          }
 
-MIRGE_ORG = {'homo_sapiens': 'human',
-           'human': 'human',
-           'human': 'human',
-           'mus_musculus': 'mouse',
-           'mouse': 'mouse',
-           'mouse': 'mouse',
-           'rattus_norvegicus': 'rat',
-           'rat': 'rat',
-           'rat': 'rat'}
+MIRGE_ORG_MAP = {'homo_sapiens': 'human',
+                 'human': 'human',
+                 'hsa': 'human',
+                 'mus_musculus': 'mouse',
+                 'mouse': 'mouse',
+                 'mm10': 'mouse',
+                 'rattus_norvegicus': 'rat',
+                 'rat': 'rat',
+                 'rnor6': 'rat'}
+MIRGE_ORG = MIRGE_ORG_MAP[config['organism']]
 
 rule download_db:
     params:
-        url = lambda wildcards: URLS[MIRGE_ORG[wildcards.org]],
-        out = lambda wildcards: join(EXT_DIR, 'mirge', MIRGE_ORG[wildcards.org])
+        url = lambda wildcards: URLS[MIRGE_ORG],
+        out = lambda wildcards: join(EXT_DIR, 'mirge', MIRGE_ORG)
     output:
-        join(EXT_DIR, 'mirge', '{org}', 'index.Libs', 'human_snorna.3.ebwt')
+        join(EXT_DIR, 'mirge', MIRGE_ORG, 'index.Libs', 'human_snorna.3.ebwt')
     shell:
         'wget -qO- {params.url} | tar xvz --strip-components 1 -C {params.out}'
 
@@ -49,9 +50,9 @@ rule add_trf_human:
         rules.download_db.output
     params:
         url = 'https://github.com/mhalushka/miRge/files/2428450/missingtrffiles.zip',
-        outdir = join(EXT_DIR, 'mirge', '{org}', 'annotation.Libs')
+        outdir = join(EXT_DIR, 'mirge', MIRGE_ORG, 'annotation.Libs')
     output:
-        join(EXT_DIR, 'mirge', '{org}', 'annotation.Libs', 'human_trna.str')
+        join(EXT_DIR, 'mirge', MIRGE_ORG, 'annotation.Libs', 'human_trna.str')
     shell:
         """
         wget {params.url}
@@ -61,4 +62,4 @@ rule add_trf_human:
 
 rule mirge_db:
     input:
-        expand('data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt', org=MIRGE_ORG['human'])
+        expand('data/ext/mirge/{org}/index.Libs/{org}_snorna.3.ebwt', org=MIRGE_ORG)
