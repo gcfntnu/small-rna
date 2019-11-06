@@ -148,7 +148,7 @@ rule unitas_allfeatures:
     output:
         join(QUANT_PROCESSED, 'unitas', 'unitas.featurecounts.counts')
     shell:
-        'python {params.script} --frac-counts {input} > {output}'
+        'python {params.script} --frac-counts {input} --output {output}'
         
 rule unitas_all:
     input:

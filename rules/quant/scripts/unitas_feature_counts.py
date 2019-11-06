@@ -6,11 +6,15 @@ import collections
 import re
 
 import pandas as pd
+from snakemake.logging import logger
 
 
 patt = re.compile(r'\s\(\d+\-\d+\)$')
+patt2 = re.compile(r'\-\(\d+\)$')
+patt3 = re.compile('\(.*\-\>.*\)$') 
+trna_patt = re.compile('(.*)(tRNA-\w{3}-\w{3})(.*)')
 
-def parse_lines(txt):
+def parse_lines(txt, simplify_trna=True, simplify_mirna=False):
     header = txt.pop(0)
     if not 'annotation(s)' in header:
         raise ValueError
@@ -25,14 +29,30 @@ def parse_lines(txt):
         seq_counts[seq] += count
         if len(els) == 3:
             # no annotation
-            #seq_anno[seq].add(seq)
-            #anno_seq[seq].add(seq)
             continue
         else:
             for annotation in remainder:
                 if annotation == '':
                     continue
                 a = patt.sub('', annotation)
+                a = patt2.sub('', a)
+
+                if 'miR' in a:
+                    if simplify_mirna:
+                        a = patt3.sub('', a)
+                else:
+                    # always simplify pir clusters
+                    a = patt3.sub('', a)
+                
+                if simplify_trna and 'tRNA' in annotation:
+                    m = trna_patt.match(a)
+                    if m:
+                        groups = m.groups()
+                        if not len(groups)== 3:
+                            print(a)
+                            print(groups)
+                            raise ValueError
+                        a = groups[1]
                 seq_anno[seq].add(a)
                 anno_seq[a].add(seq)
     return seq_counts, seq_anno, anno_seq
@@ -69,8 +89,8 @@ def parse_annotations(names):
         elif 'piR' in n:
             feature = 'piRNA'
             name = n
-        elif 'tRF' in n:
-            feature = n.split()[0]
+        elif 'tRNA' in n or 'tRF' in n or '-tR' in n:
+            feature = 'tRNA'
             name = n
         elif '|' in n:
             feature, name = n.split('|')
@@ -80,6 +100,9 @@ def parse_annotations(names):
         anno.append([feature, name])
     df = pd.DataFrame(anno, index=names, columns=['feature_class', 'feature_name'])
     return df
+
+
+    
 
 def argparser():
     parser = argparse.ArgumentParser(description='Aggregate unitas features from full annotation files')
@@ -111,8 +134,8 @@ if __name__ == '__main__':
     DF.fillna(0, inplace=True)
     DF.index.name = 'feature_id'
     DF = DF.reindex(DF.mean(axis=1).sort_values(ascending=False).index, axis=0)
-    if not os.path.exists(os.path.dirname(out_fn)):
-        os.makedirs(os.path.dirname(out_fn))
-    DF.to_csv(out_fn, sep='\t')
+    if not os.path.exists(os.path.dirname(args.output)):
+        os.makedirs(os.path.dirname(args.output))
+    DF.to_csv(args.output, sep='\t')
     anno = parse_annotations(DF.index)
-    anno.to_csv(out_fn + '.annotations', sep='\t', index=False)
+    anno.to_csv(args.output + '.annotations', sep='\t', index=False)
