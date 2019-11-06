@@ -19,7 +19,9 @@ import yaml
 
 from snakemake.workflow import srcdir
 from snakemake.logging import logger
-from snakemake.utils import update_config
+from snakemake.utils import update_config, min_version
+
+min_version("5.1.2")
 
 def update_config2(config, extra_config):
     """Recursively update dictionary config with overwrite_config.
@@ -63,10 +65,34 @@ if os.path.exists(extra_conf_fn):
         c  = yaml.load(fh) or {}
         # original config will override extra config on shared items
         update_config2(config, c)
+        
+# library preparation kit specific configuration
+libprep_fn = srcdir('libprep.config')
+with open(libprep_fn) as fh:
+    LIBPREP_CONF  = yaml.load(fh) or {}
+kit = config.get('libprepkit', 'default')
+LIBPREP = LIBPREP_CONF[kit]
+if kit.startswith('Lexogen'):
+    # we cut start/end random seqs on lexogen kits
+    read_geometry = config.get('read_geometry')
+    if read_geometry:
+        read_geometry = [int(i) for i in read_geometry]
+        read_geometry[0] -= 11
+        if len(read_geometry) > 1:
+            read_geometry[0] -= 8
+        config['read_geometry'] = read_geometry
 
-SAMPLES = config.get('samples', [])
-if SAMPLES:
-    SAMPLES = list(SAMPLES.keys())
+# load function for statistical models
+def load_model(model_yaml_file):
+    with open(model_yaml_file) as fh:
+        MODELS  = yaml.load(fh) or {}
+        config['models'] = MODELS
+        config['model_names'] = list(MODELS.keys())
+        
+if not 'SAMPLES' in locals():
+    SAMPLES = list(config.get('samples', {}).keys())
+
+    
 
 include:
     'rules/filter.rules'

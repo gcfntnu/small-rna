@@ -12,7 +12,7 @@ rule filter_adapter_atropos:
     params:
         args = '--mirna'
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://jdidion/atropos:latest'
     threads:
         4
     log:
@@ -27,17 +27,25 @@ rule filter_adapter_atropos:
         ' > {log} '
         '&& test -f {output.untrimmed} || touch {output.untrimmed}'
 
-rule filter_bioscientific_trimmed:
+rule filter_umidedup:
     input:
         fastq = rules.filter_adapter_atropos.output.trimmed
+    output:
+        temp(join(FILTER_INTERIM, '{sample}', '{sample}.dup.fastq'))
+    singularity:
+        'docker://quay.io/biocontainers/fastx_toolkit:0.0.14--hfc679d8_7'
+    shell:
+        'fastx_collapser -i {input} -o {output}'
+    
+rule filter_bioscientific_trimmed:
+    input:
+        fastq = rules.filter_adapter_atropos.output.trimmed if config['filter'].get('dedup', False) else rules.filter_umidedup.output
     output:
         fastq = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.1.fastq'))
     params:
         '-f 4 -t 4 -A -G --low_complexity_filter'
     threads:
         4
-    conda:
-        'envs/filter.yaml'
     singularity:
         'docker://flatberg/filter:0.1'
     log:
