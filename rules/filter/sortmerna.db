@@ -17,8 +17,6 @@ rule sortmerna_db:
         join(EXT_DIR, 'sortmerna', 'silva-euk-28s-id98.fasta'),
         join(EXT_DIR, 'sortmerna', 'rfam-5.8s-database-id98.fasta'),
         join(EXT_DIR, 'sortmerna', 'rfam-5s-database-id98.fasta')
-    conda:
-        'envs/sortmerna.yaml'
     singularity:
         'docker://flatberg/filter:0.1'
     shell:

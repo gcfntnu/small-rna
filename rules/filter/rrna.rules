@@ -28,7 +28,6 @@ rule rrna_filter_bbduk:
     threads:
         8
     shell:
-
         'bbduk.sh t={threads} overwrite=true in={input.fastq} k=25 rcomp=f outu={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
 
     

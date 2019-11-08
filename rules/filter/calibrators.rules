@@ -185,8 +185,6 @@ rule calibrators_filter_bbduk:
     shell:
         'bbduk.sh in={input.fastq} overwrite=true outu={output.fastq} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
 
-print(config['filter'])
-
 def _filter_get_calibrator_clean(wildcards):
     cal = config['filter'].get('filter_calibrators', True)
     cal_quant = config['filter'].get('calibrator_quantifier', 'bowtie')

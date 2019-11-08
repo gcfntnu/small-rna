@@ -5,7 +5,7 @@ import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 include:
-    'unitas.db'
+    '../gcfdb/unitas.db'
 
 UNITAS_ARGS = ''
 if config['filter'].get('filter_ribosomal'):
@@ -25,9 +25,10 @@ UNITAS_ORG = _unitas_map[config.get('organism')]
 rule unitas:
     input:
         fastq = get_filtered_fastq,
-        refseq = rules.unitas_extra_reference.output
+        refseq = rules.unitas_extra_reference.output,
+        db = rules.unitas_db.output
     params:
-        tmpdir = join(QUANT_INTERIM, 'unitas'),
+        rundir = join(EXT_DIR, 'unitas'),
         outdir = abspath(join(QUANT_PROCESSED, 'unitas', '{sample}')),
         args = UNITAS_ARGS + ' -species_miR_only -keep_temp ',
         org  = config.get('organism', 'homo_sapiens')
@@ -48,10 +49,10 @@ rule unitas:
         2
     shell:
         """
-        mkdir -p {params.tmpdir}
-        RUNDIR=$(pwd)
-        cd {params.tmpdir} || exit
-        unitas.pl -input $RUNDIR/{input.fastq} -s {params.org} -threads {threads} {params.args}
+        mkdir -p {params.rundir}
+        WORKDIR=$(pwd)
+        cd {params.rundir} || exit
+        unitas.pl -input $WORKDIR/{input.fastq} -s {params.org} -threads {threads} {params.args}
         mv UNITAS_*_{wildcards.sample}.*fastq_#1/* {params.outdir}/
         rm -rf UNITAS_*_{wildcards.sample}.*fastq_#1
         """

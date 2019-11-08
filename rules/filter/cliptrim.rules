@@ -39,7 +39,7 @@ rule filter_umidedup:
     
 rule filter_bioscientific_trimmed:
     input:
-        fastq = rules.filter_adapter_atropos.output.trimmed if config['filter'].get('dedup', False) else rules.filter_umidedup.output
+        fastq = rules.filter_umidedup.output if config['filter'].get('dedup', False) else rules.filter_adapter_atropos.output.trimmed
     output:
         fastq = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.1.fastq'))
     params:

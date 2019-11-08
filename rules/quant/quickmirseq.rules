@@ -2,7 +2,7 @@
 from os.path import dirname, abspath
 
 include:
-    'quickmirseq.db'
+    '../gcfdb/quickmirseq.db'
     
 rule quickmirseq_symlink:
     input:
@@ -35,7 +35,7 @@ rule quickmirseq_config:
     threads:
         8
     output:
-        join(EXT_DIR, 'quickmirseq', '{org}', 'quickmirseq.conf')
+        join(QUANT_PROCESSED, 'quickmirseq', 'quickmirseq.conf')
     shell:
         """
         echo SPECIES={params.species} >> {output}
@@ -61,19 +61,11 @@ rule quickmirseq_config:
         echo OFFSET_ANALYSIS=yes >> {output}
         """    
 
-rule sample_file:
-    output:
-        join(EXT_DIR, 'quickmirseq', 'all_ids.quickmirseq')
-    run:
-       with open(output[0], 'w') as fh:
-           fh.write('\n'.join(SAMPLES))
-           fh.write('\n')
-
 rule quickmirseq:
     input:
         samples = expand(join(QUANT_INTERIM, 'quickmirseq', 'fastq', '{sample}.fastq'), sample=SAMPLES),
-        sample_file = join(EXT_DIR, 'quickmirseq', 'all_ids.quickmirseq'),
-        config = join(EXT_DIR, 'quickmirseq', config['organism'], 'quickmirseq.conf')
+        sample_file = join(QUANT_INTERIM, 'quickmirseq', 'allids.txt'),
+        config = join(QUANT_INTERIM, 'quickmirseq', 'quickmirseq.conf')
     params:
         fastq_dir = rules.quickmirseq_symlink.params.fastq_dir
     output:
