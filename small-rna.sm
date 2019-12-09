@@ -93,7 +93,8 @@ if not 'SAMPLES' in locals():
     SAMPLES = list(config.get('samples', {}).keys())
 
     
-
+include:
+    'rules/gcfdb.rules'
 include:
     'rules/filter.rules'
 include:

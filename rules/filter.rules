@@ -23,6 +23,7 @@ include:
 include:
     'filter/rrna.rules'
 
+
 def get_filtered_fastq(wildcards):
     return _filter_clean_fastq(wildcards)
 

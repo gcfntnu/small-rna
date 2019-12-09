@@ -53,7 +53,7 @@ rule quickmirseq_config:
         echo ZEROCOUNT_SAMPLE_THRESHOLD=0.60 >> {output}
         echo AVG_READ_THRESHOLD=2 >> {output}
         echo MIN_MIRNA_LENGTH=16 >> {output}
-        echo MAX_MIRNA_LENGTH=28 >> {output}
+        echo MAX_MIRNA_LENGTH=42 >> {output}
         echo EXTENSION3=5 >> {output}
         echo EXTENSION5=4 >> {output}
         echo keepTemp=yes >> {output}
@@ -74,7 +74,7 @@ rule quickmirseq:
         annotation = join(QUANT_PROCESSED, 'quickmirseq', 'readAnnotDistribution.csv'),
         unmapped = join(QUANT_PROCESSED, 'quickmirseq', 'unmapped.csv')
     singularity:
-        'docker://flatberg/quickmirseq:01'
+        'docker://gcfntnu/quickmirseq:1.0'
     shell:
         'perl  $QuickMIRSeq/QuickMIRSeq.pl  '
         '{input.sample_file} '
