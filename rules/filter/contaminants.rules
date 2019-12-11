@@ -1,82 +1,29 @@
 #-*- mode:snakemake -*-
 """
-http://seqanswers.com/forums/archive/index.php/t-42552.html
-Those are common contaminant microbes that we encounter in sequencing
-https://drive.google.com/file/d/0B3llHR93L14wZ1N6akxrSW16Z0U/view?usp=sharing
-bbmap.sh in=ref.fa 
-bbduk.sh -Xmx1g in=reads.fq out=clean.fq ref=phix.fasta k=31 hdist=1
-
-
 NOTES:
-emvec looks to be too diverse and perhaps only used when vector contamination is suspected
 """
 from os.path import join
 
+CONT_DIR = join(EXT_DIR, 'contaminants')
 
-rule contaminants_phix:
-    params:
-        url = 'ftp://igenome:G3nom3s4u@ussd-ftp.illumina.com/PhiX/Illumina/RTA/PhiX_Illumina_RTA.tar.gz'
-    output:
-        join(EXT_DIR, 'contaminants', 'phix', 'fasta', 'phix.fa')
-    shell:
-        """
-        curl {params.url} | tar xv
-        mv PhiX/Illumina/RTA/Sequence/WholeGenomeFasta/genome.fa {output}
-        rm -rf PhiX
-        """
-
-rule contaminants_bacterial:
-    params:
-        url = 'http://portal.nersc.gov/dna/microbial/assembly/bushnell/fusedEPmasked2.fa.gz',
-    output:
-        join(EXT_DIR, 'contaminants', 'bacterial_common_JGI', 'fasta', 'fusedEPmasked2.fa')
-    shell:
-        """wget {params.url}  | gunzip -c | sed 's/ /_/g' > {output}"""
-
-rule contaminants_univec_fasta:
-    params:
-        url = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec',
-        url_core = 'http://ftp.ncbi.nlm.nih.gov/pub/UniVec/UniVec_Core'
-    output:
-        join(EXT_DIR, 'contaminants', 'univec', 'fasta', 'univec.fa')
-    shell:
-        'wget {params.url_core} -O- > {output}'
-
-rule contaminants_univec_anno:
-    input:
-        rules.contaminants_univec_fasta.output
-    output:
-        join(EXT_DIR, 'contaminants', 'univec', 'anno.tsv')
-    shell:
-        """
-        grep '>' {input} | sed 's/ /\t/' > {output}
-        """
-    
-rule contaminants_emvec_fasta:
-    """emvec processing from centrifuge code
-    """
-    params:
-        url = 'http://ftp.ebi.ac.uk/pub/databases/emvec/emvec.dat.gz'
-    output:
-        join(EXT_DIR, 'contaminants', 'univec', 'fasta', 'emvec.fa')
-    shell:
-        """
-        wget {params.url} -O- | gunzip -c | grep -E '^DE|^ ' | awk '/^DE/ {{ sub(/DE */,">"); gsub(/[ |]/,"_") }}; {{ print }}' | awk '/^ / {{ gsub(/ /,""); sub(/[0-9]*$/,"") }}; {{ print}}' > {output}
-        """
-
-rule contaminants_emvec_anno:
-    input:
-        rules.contaminants_emvec_fasta.output
-    output:
-        join(EXT_DIR, 'contaminants', 'emvec', 'anno.tsv')
-    shell:
-        """
-        grep '>' {input} | sed 's/ /\t/' > {output}
-        """
+def contaminants_get_fasta(*args, **kw):
+    ref = config['filter']['contaminants']['ref'].split(',')
+    out = []
+    for r in ref:
+        if r.lower() == 'univec':
+            out.append(join(EXT_DIR, 'univec', 'fasta', 'univec.fa'))
+        if r.lower() == 'emvec':
+            out.append(join(EXT_DIR, 'emvec', 'fasta', 'emvec.fa'))
+        if r.lower() == 'common_bacterial_euk':
+            out.append(join(EXT_DIR, 'JGI', 'fasta', 'fusedEPmasked2.fa'))
+        if r.lower() == 'common_bacterial_prok':
+            out.append(join(EXT_DIR, 'JGI', 'fasta', 'fusedEPmasked2.fa'))
+                       
+    return out
 
 rule contaminants_fasta:
     input:
-        rules.contaminants_univec_fasta.output
+        contaminants_get_fasta
     output:
         join(EXT_DIR, 'contaminants', 'fasta', 'contaminants.fa')
     shell:
@@ -92,85 +39,128 @@ rule contaminants_unitas:
     shell:
         'python {params.script} {input} > {output}'
 
-rule contaminants_index_bowtie:
+rule contaminants_build_index_bowtie:
     input:
         rules.contaminants_fasta.output
-    params:
-        index = join(EXT_DIR, 'contaminants', 'index', 'cont')
     output:
-        join(EXT_DIR, 'contaminants', 'index', 'cont.1.ebwt'),
-        join(EXT_DIR, 'contaminants', 'index', 'cont.2.ebwt'),
-        join(EXT_DIR, 'contaminants', 'index', 'cont.3.ebwt'),
-        join(EXT_DIR, 'contaminants', 'index', 'cont.4.ebwt'),
-        join(EXT_DIR, 'contaminants', 'index', 'cont.rev.1.ebwt'),
-        join(EXT_DIR, 'contaminants', 'index', 'cont.rev.2.ebwt'),
-    conda:
-        'envs/contaminants.yaml'
+        join(CONT_DIR, 'index', 'bowtie', 'contaminants.1.ebwt'),
+        join(CONT_DIR, 'index', 'bowtie', 'contaminants.2.ebwt'),
+        join(CONT_DIR, 'index', 'bowtie', 'contaminants.3.ebwt'),
+        join(CONT_DIR, 'index', 'bowtie', 'contaminants.4.ebwt'),
+        join(CONT_DIR, 'index', 'bowtie', 'contaminants.rev.1.ebwt'),
+        join(CONT_DIR, 'index', 'bowtie', 'contaminants.rev.2.ebwt')
+    params:
+        index = join(CONT_DIR, 'index', 'bowtie', 'contaminants')
     singularity:
         'docker://flatberg/filter:0.1'
     shell:
         'bowtie-build {input} {params.index}'
-        
-rule contaminants_filter_bowtie:
+
+rule contaminants_build_index_bowtie2:
     input:
-        fastq = _filter_get_calibrator_clean,
-        index = rules.contaminants_index_bowtie.output
+        rules.contaminants_fasta.output
     output:
-        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.contaminants.bowtie.clean.fastq'),
-        count = join(FILTER_INTERIM, '{sample}', '{sample}.contaminants.bowtie.counts'),
-        sam = temp(join(FILTER_INTERIM, '{sample}', '{sample}.contaminants.sam'))
-    conda:
-        'envs/contaminants.yaml'
+        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.1.bt2'),
+        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.2.bt2'),
+        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.3.bt2'),
+        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.4.bt2'),
+        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.rev.1.bt2'),
+        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.rev.2.bt2')
+    params:
+        index = join(CONT_DIR, 'index', 'bowtie2', 'contaminants')
+    singularity:
+        'docker://flatberg/filter:0.1'
+    shell:
+        'bowtie2-build {input} {params.index}'
+
+rule contaminants_filter_se_bowtie:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
+        index = rules.contaminants_build_index_bowtie.output
+    output:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie', '{sample}_R1.counts')
     singularity:
         'docker://flatberg/filter:0.1'
     params:
         args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
-        index = rules.contaminants_index_bowtie.params.index
+        index = rules.contaminants_build_index_bowtie.params.index
     threads:
-        4
+        2
     log:
-        bowtie = 'logs/{sample}/filter.contaminants.bowtie.log',
-        error = 'logs/{sample}/contaminants.error'
+        bowtie = 'logs/{sample}/filter.{merge}.contaminants.bowtie.log',
+        error = 'logs/{sample}/filter.{merge}.contaminants.bowtie.error'
     shell:
         'bowtie {params.index} '
-        '{input.fastq} '
-        '--un {output.fastq} '
+        '{input.R1} '
+        '--un {output.R1} '
         '-p {threads} '
         '{params.args} '
         '2>> {log.bowtie} '
-        '| tee {output.sam} '
-        '| samtools view -q 5 -S  - | cut -f3 | sort | uniq -c  > {output.count} '
+        '| samtools view -q 5 -S - | cut -f3 | sort | uniq -c  > {output.counts} '
+        '2>> {log.error} '
+        
+rule contaminants_filter_se_bowtie2:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
+        index = rules.contaminants_build_index_bowtie2.output
+    output:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie2', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie2', '{sample}_R1.counts')
+    params:
+        args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
+        index = rules.contaminants_build_index_bowtie2.params.index
+    threads:
+        2
+    log:
+        bowtie = 'logs/{sample}/filter.{merge}.contaminants.bowtie2.log',
+        error = 'logs/{sample}/filter.{merge}.error'
+    shell:
+        'bowtie2 '
+        '-U {input.R1} '
+        '--un {output.R1} '
+        '-x {params.index} '
+        '-p {threads} '
+        '{params.args} '
+        '2>> {log.bowtie} '
+        '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
 
-rule contaminants_filter_bbduk:
+rule contaminants_build_index_bbmap:
     input:
-        fastq = _filter_get_calibrator_clean,
-        ref = 'data/ext/smallrna/contaminants/fasta/contaminants.fa'
+         rules.contaminants_fasta.output
     output:
-        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.contaminants.bbduk.clean.fastq'),
-        count = join(FILTER_INTERIM, '{sample}', '{sample}.contaminants.bbduk.counts')
+        join(CONT_DIR, 'index', 'bbmap', 'ref', 'genome', '1', 'info.txt')
     params:
-        args = 'rcomp=f k=27'
+        index = join(CONT_DIR, 'index', 'bbmap')
     conda:
-        'envs/calibrators.yaml'
+        'envs/contaminants.yaml'
     singularity:
-        'docker://flatberg/filter:0.1'
-    log:
-        'logs/{sample}/filter.contaminants.bbduk.log'
+        'docker://quay.io/biocontainers/bbmap'
+    shell:
+        'bbmap.sh ref={input} path={params.index}'
+
+rule contaminants_filter_se_bbduk:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
+        ref = rules.contaminants_fasta.output
+    output:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bbduk', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bbduk', '{sample}_R1.counts')
+    singularity:
+        'docker://quay.io/biocontainers/bbmap'
     threads:
         4
+    log:
+        'logs/{sample}/filter.{merge}.contaminants.bbduk.log'
     shell:
-        'bbduk.sh in={input.fastq} overwrite=true k=27 threads={threads} rcomp=f outu={output.fastq} stats={output.count} ref={input.ref} 2> {log}'
+        'bbduk.sh in={input.R1} overwrite=true outu={output.R1} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
 
-def _filter_get_contaminants_clean(wildcards):
-    cnt = config['filter'].get('filter_contaminants', True)
-    cnt_quant = config['filter'].get('contaminant_quantifier', 'bowtie')
-    if cnt:
-        if cnt_quant in ['bowtie', 'bbduk']:
-            return join(FILTER_INTERIM, wildcards.sample, '{}.contaminants.{}.clean.fastq'.format(wildcards.sample, cnt_quant))
-        elif cnt_quant == 'unitas':
-            assert(config['filter'].get('quant') == 'unitas')
-            return _filter_get_calibrator_clean(wildcards)
-        else:
-            raise ValueError('contaminant quantifier option not valid: {}'.format(quant))
-    return _filter_get_calibrator_clean(wildcards)
+        
+rule contaminants_filter_skip:
+    input:
+        join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R{read_num}.fastq')
+    output:
+        join(FILTER_INTERIM, '{merge}', 'contaminants', 'skip', '{sample}_R{read_num}.fastq')
+    shell:
+        'ln -sr {input} {output}'

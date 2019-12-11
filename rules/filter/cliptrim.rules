@@ -1,7 +1,7 @@
 #-*- mode:snakemake -*-
 from os.path import join
 
-ADAPTER = config.get('adapter', 'TGGAATTCTCGG')
+ADAPTER = config.get('adapter') or LIBPREP.get('single_end', {}).get('adapter') or LIBPREP.get('adapter')
 
 rule filter_adapter_atropos:
     input:
@@ -132,7 +132,7 @@ rule filter_mirtrace:
         config = '.filter_mirtrace.conf'
     params:
         outdir = join(FILTER_INTERIM, 'mirtrace'),
-        protocol = mirtrace_protocol(),
+        protocol = LIBPREP['mirtrace']['protocol'],
         species = 'hsa'
     output:
         
@@ -149,11 +149,11 @@ rule filter_mirtrace:
 def _filter_get_trimmed(wildcards):
     if not config['filter'].get('filter_trim', True):
         return _filter_get_raw(wildcards)
-    if 'kit' in wildcards: and wildcards.kit is not None:
+    if 'kit' in wildcards and wildcards.kit is not None:
         kit = wildcards.kit
     else:
         kit = config.get('libprepkit')
         
-    if kit not in ['truseq', 'bioscientific']:
-        raise ValueError('Kit argument: {} not supprted'.format(kit))
+    if kit not in ['TruSeq Small RNA Library Prep Kit', 'Bioo Scientific NEXTflex Small RNA-Seq Kit v3']:
+        raise ValueError('Kit argument: {} not supported'.format(kit))
     return join(FILTER_INTERIM, wildcards.sample, '{}.trimmed.{}.fastq'.format(wildcards.sample, kit))

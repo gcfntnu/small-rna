@@ -7,10 +7,46 @@ warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 include:
     '../gcfdb/unitas.db'
 
+rule contaminants_unitas:
+    input:
+        get_contaminants_fasta()
+    params:
+        script = srcdir('scripts/contaminants_unitas.py')
+    output:
+        join(QUANT_INTERIM, 'unitas', '_contaminants_unitas_formatted.fa')
+    shell:
+        'python {params.script} {input} > {output}'
+
+rule spikein_unitas:
+    input:
+        get_spikein_fasta()
+    params:
+        script = srcdir('scripts/spikein_unitas.py')
+    output:
+        join(QUANT_INTERIM, 'unitas', '_spikein_unitas_formatted.fa')
+    shell:
+        'python {params.script} {input} > {output}'
+        
+UNITAS_REFSEQ = []
+if config['filter']['spikein']['quant'] and config['filter']['spikein']['method'] == 'unitas':
+    UNITAS_REFSEQ.append(rules.spikein_unitas.output)
+if config['filter']['contaminants']['quant'] and config['filter']['contaminants']['method'] == 'unitas':
+    UNITAS_REFSEQ.append(rules.contaminants_unitas.output)
+    
+rule unitas_extra_reference:
+    input:
+        UNITAS_REFSEQ
+    output:
+        join(QUANT_INTERIM, 'unitas', 'refseq.fa')
+    shell:
+        'cat {input} > {output}'
+    
 UNITAS_ARGS = ''
 if config['filter'].get('filter_ribosomal'):
     if config['filter']['ribosomal_quantifier'] == 'unitas':
         UNITAS_ARGS += '--riborase '
+
+
 if len(UNITAS_REFSEQ) > 0:
     UNITAS_ARGS += '-refseq {} '.format(abspath(join(QUANT_INTERIM, 'unitas', 'refseq.fa')))
 

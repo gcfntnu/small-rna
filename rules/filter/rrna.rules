@@ -1,46 +1,144 @@
 #-*- mode:snakemake -*-
+"""
+NOTES:
+"""
 from os.path import join
 
-include:
-    'sortmerna.rules'
+RRNA_REF = config['filter']['ribosomal'].get('ref', 'ncbi')
 
-rule rrna_ribokmers:
-    params:
-        url = 'http://portal.nersc.gov/dna/microbial/assembly/bushnell/riboKmers.fa.gz'
-    output:
-        join(EXT_DIR, 'rrna', 'ribokmers.fa.gz')
-    shell:
-        'wget {params.url} -O- > {output}'
-    
-rule rrna_filter_bbduk:
+def rrna_get_fasta(*args, **kw):
+    ref = config['filter']['ribosomal']['ref']
+    if not ref == 'ncbi':
+        raise NotImplementedError
+    org = config['organism']
+    out = []
+    out.append(join(EXT_DIR, 'ncbi', org, 'fasta', 'rrna.fa'))
+    return out
+
+rule rrna_fasta:
     input:
-        fastq = _filter_get_contaminants_clean,
-        ref = rules.rrna_ribokmers.output
+        rrna_get_fasta
     output:
-        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbduk.clean.fastq'),
-        counts = join(FILTER_INTERIM, '{sample}', '{sample}.rrna.bbduk.counts')
-    conda:
-        'envs/filter.yaml'
+        temp(join(EXT_DIR, 'rrna', 'fasta', 'rrna.fa'))
+    shell:
+        'cat {input} > {output}'
+
+rule rrna_unitas:
+    input:
+        rules.rrna_fasta.output
+    params:
+        script = srcdir('scripts/rrna_unitas.py')
+    output:
+        temp(join(INTERIM_DIR, '_rrna_unitas_formatted.fa'))
+    shell:
+        'python {params.script} {input} > {output}'
+
+
+rule rrna_filter_se_bowtie:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', config['filter']['contaminants']['quantifier'], '{sample}_R1.fastq'),
+        index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'rrna', 'bowtie', 'rrna' + '.1.ebwt')
+    output:
+        R1 = join(FILTER_INTERIM, '{merge}', 'rrna', 'bowtie', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, '{merge}', 'rrna', 'bowtie', '{sample}.counts')
     singularity:
         'docker://flatberg/filter:0.1'
+    params:
+        args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
+        index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'rrna', 'bowtie', 'rrna')
+    threads:
+        2
     log:
-        'logs/{sample}/filter.rrna.bbduk.log'
+        bowtie = 'logs/{sample}/filter.{merge}.rrna.bowtie.log',
+        error = 'logs/{sample}/filter.{merge}.rrna.bowtie.error'
+    shell:
+        'bowtie {params.index} '
+        '{input.R1} '
+        '--un {output.R1} '
+        '-p {threads} '
+        '{params.args} '
+        '2>> {log.bowtie} '
+        '| samtools view -q 5 -S - | cut -f3 | sort | uniq -c  > {output.counts} '
+        '2>> {log.error} '
+        
+rule rrna_filter_se_bowtie2:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', config['filter']['contaminants']['quantifier'], '{sample}_R1.fastq'),
+        index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'rrna', 'bowtie2', 'rrna' + '.1.bt2')
+    output:
+        R1 = join(FILTER_INTERIM, '{merge}', 'rrna', 'bowtie2', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, '{merge}', 'rrna', 'bowtie2', '{sample}.counts')
+    params:
+        args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
+        index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'rrna', 'bowtie2', 'rrna')
+    threads:
+        2
+    log:
+        bowtie = 'logs/{sample}/filter.{merge}.rrna.bowtie2.log',
+        error = 'logs/{sample}/filter.{merge}.error'
+    shell:
+        'bowtie2 '
+        '-U {input.R1} '
+        '--un {output.R1} '
+        '-x {params.index} '
+        '-p {threads} '
+        '{params.args} '
+        '2>> {log.bowtie} '
+        '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
+        '2>> {log.error} '
+
+rule rrna_build_index_bbmap:
+    input:
+         rules.rrna_fasta.output
+    output:
+        join(EXT_DIR, RRNA_REF, ORG, 'index', 'bbmap', 'ref', 'genome', '1', 'info.txt')
+    params:
+        index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'bbmap')
+    singularity:
+        'docker://quay.io/biocontainers/bbmap'
+    shell:
+        'bbmap.sh ref={input} path={params.index}'
+
+
+rule rrna_filter_se_bbduk_universal:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', config['filter']['contaminants']['quantifier'], '{sample}_R1.fastq'),
+        ref = join(EXT_DIR, 'JGI', 'fasta', 'ribokmers.fa.gz')
+    output:
+        R1 = join(FILTER_INTERIM, '{merge}', 'rrna', 'bbduk_universal', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, '{merge}', 'rrna', 'bbduk_universal', '{sample}.counts')
+    singularity:
+        'docker://quay.io/biocontainers/bbduk'
+    log:
+        'logs/{sample}/filter.{merge}.rrna.bbduk.log'
     threads:
         8
     shell:
-        'bbduk.sh t={threads} overwrite=true in={input.fastq} k=25 rcomp=f outu={output.fastq} stats={output.counts} ref={input.ref} 2> {log}'
+        'bbduk.sh t={threads} overwrite=true in={input.R1} k=31 rcomp=f outu={output.R1} stats={output.counts} ref={input.ref} 2> {log}'
 
-    
-def _filter_clean_fastq(wildcards):
-    rib = config['filter'].get('filter_ribosomal', True)
-    ribo_quant = config['filter'].get('ribosomal_quantifier', 'bbduk')
-    if rib:
-        if ribo_quant in ['bbduk', 'sortmerna']:
-            return join(FILTER_INTERIM, '{0}', '{0}.rrna.{1}.clean.fastq').format(wildcards.sample, ribo_quant)
-        elif ribo_quant == 'unitas':
-            assert(config['filter'].get('quant') == 'unitas')
-            return _filter_get_contaminants_clean(wildcards)
-        else:
-            raise ValueError('ribosomal quantifier option not valid: {}'.format(ribo_quant))
-    else:
-        return _filter_get_contaminants_clean(wildcards)
+SMDB = config['db']['sortmerna']['db'].split(',')
+rule rrna_filter_se_sortmerna:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', config['filter']['contaminants']['quantifier'], '{sample}_R1.fastq'),
+        ref = expand(join(EXT_DIR, 'sortmerna', '{db}.idx.stats'), db=SMDB)
+    output:
+        fastq = join(FILTER_INTERIM, '{merge}', 'rrna', 'sortmerna', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, '{merge}', 'rrna', 'sortmerna', '{sample}.counts')
+    params:
+        args = '--fastx --sam ',
+        ref = ':'.join([','.join(i) for i in zip(expand(join(EXT_DIR, 'sortmerna', 'fasta', '{db}.fasta'), db=SMDB), expand(join(EXT_DIR, 'sortmerna', 'index', '{db}.idx'), db=SMDB))])
+    singularity:
+        'docker://flatberg/filter:0.1'
+    shell:
+        'sortmerna '
+        '--reads {input.R1} '
+        '--ref {params.ref} '
+        '{params.args} '
+
+rule rrna_skip:
+    input:
+        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', config['filter']['contaminants']['quantifier'], '{sample}_R{readnum}.fastq')
+    output:
+        R1 = join(FILTER_INTERIM, '{merge}', 'rrna', 'skip', '{sample}_R{readnum}.fastq')
+    shell:
+        'ln -sr {input} {output}'

@@ -3,116 +3,53 @@
 from os.path import join
 from snakemake.workflow import srcdir
 
-CALIBRATORS_EXTEND = config['filter'].get('calibrators_extend', False)
-CAL_DIR = join(EXT_DIR, 'smallrna', 'calibrators')
+SPIKE_REF = config['filter']['spikein'].get('ref', '')   
+
+def get_spikein_index():
+    ref = SPIKE_REF.lower()
+    method = config['filter']['spikein'].get('method')
+    if not method in ['bowtie', 'bowtie2']:
+        method = 'bowtie'
+    if ref == 'ercc':
+        return join(EXT_DIR, 'ERCC', 'index', 'ERCC92', method, 'ERCC92')
+    elif ref == 'smallrna_calibrators':
+        return join(EXT_DIR, 'smallrna_calibrators', 'index', 'calibrators.dna', method, 'calibrators.dna')
+    else:
+        return join(EXT_DIR, 'merged_spikein', 'index', 'merged_spikein', method, 'merged_spikein')
+
+def get_spikein_fasta():
+    ref = SPIKE_REF.lower()
+    if ref == 'ercc':
+        return join(EXT_DIR, 'ERCC', 'fasta', 'ERCC92.fa')
+    elif ref == 'smallrna_calibrators':
+        return join(EXT_DIR, 'smallrna_calibrators', 'fasta', 'calibrators.dna.fa')
+    else:
+        return join(EXT_DIR, 'merged_spikein', 'fasta', 'merged_spikein.fa')
     
-rule calibrators_fasta:
-    output:
-        join(CAL_DIR, 'calibrators.fa')
-    shell:
-        """
-        echo ">spikeIn|Cal01 spikeIn 01" >> {output}
-        echo GUCCCACUCCGUAGAUCUGUUC >> {output}
-        echo ">spikeIn|Cal02 spikeIn 2" >> {output}
-        echo GAUGUAACGAGUUGGAAUGCAA >> {output}
-        echo ">spikeIn|Cal03 spikeIn 3" >> {output}
-        echo UAGCAUAUCGAGCCUGAGAACA >> {output}
-        echo ">spikeIn|Cal04 spikeIn 4" >> {output}
-        echo CAUCGGUCGAACUUAUGUGAAA >> {output}
-        echo ">spikeIn|Cal05 spikeIn 5" >> {output}
-        echo GAAGCACAUUCGCACAUCAUAU >> {output}
-        echo ">spikeIn|Cal06 spikeIn 6" >> {output}
-        echo UCUUAACCCGGACCAGAAACUA >> {output}
-        echo ">spikeIn|Cal07 spikeIn 7" >> {output}
-        echo AGGUUCCGGAUAAGUAAGAGCC >> {output}
-        echo ">spikeIn|Cal08 spikeIn 8" >> {output}
-        echo UAACUCCUUAAGCGAAUCUCGC >> {output}
-        echo ">spikeIn|Cal09 spikeIn 9" >> {output}
-        echo AAAGUAGCAUCCGAAAUACGGA >> {output}
-        echo ">spikeIn|Cal10 spikeIn 10" >> {output}
-        echo UGAUACGGAUGUUAUACGCAGC >> {output}
-        """
-
-rule calibrators_to_dna:
+rule merged_spikein_fasta:
     input:
-        rules.calibrators_fasta.output
+        join(EXT_DIR, 'ERCC', 'fasta', 'ERCC92.fa'),
+        join(EXT_DIR, 'smallrna_calibrators', 'calibrators.dna.fa')
     output:
-        join(CAL_DIR, 'calibrators.dna.fa')
-    message:
-        'Converting RNA alphabet to DNA for calibrators'
-    shell:
-        """
-        cat {input} | sed 's/U/T/g'> {output}
-        """
+        join(EXT_DIR, 'merged_spikein', 'fasta', 'merged_spikein.fa')
 
-rule calibrators_extend:
-    input:
-        rules.calibrators_to_dna.output
-    output:
-        join(CAL_DIR, 'calibrators.dna.extended.fa')
-    params:
-        script = srcdir('scripts/extend_calibrators.py')
-    shell:
-        'python {params.script} {input} {output}'
-
-
-rule calibrators_bowtie_build_index:
-    input:
-        rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
-    output:
-        join(CAL_DIR, 'index', 'bowtie', 'calibrators.1.ebwt'),
-        join(CAL_DIR, 'index', 'bowtie', 'calibrators.2.ebwt'),
-        join(CAL_DIR, 'index', 'bowtie', 'calibrators.3.ebwt'),
-        join(CAL_DIR, 'index', 'bowtie', 'calibrators.4.ebwt'),
-        join(CAL_DIR, 'index', 'bowtie', 'calibrators.rev.1.ebwt'),
-        join(CAL_DIR, 'index', 'bowtie', 'calibrators.rev.2.ebwt')
-    params:
-        index = join(CAL_DIR, 'index', 'bowtie', 'calibrators')
-    conda:
-        'envs/calibrators.yaml'
-    singularity:
-        'docker://flatberg/filter:0.1'
-    shell:
-        'bowtie-build {input} {params.index}'
-
-rule calibrators_bowtie2_build_index:
-    input:
-        rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
-    output:
-        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.1.bt2'),
-        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.2.bt2'),
-        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.3.bt2'),
-        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.4.bt2'),
-        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.rev.1.bt2'),
-        join(CAL_DIR, 'index', 'bowtie2', 'calibrators.rev.2.bt2')
-    params:
-        index = join(CAL_DIR, 'index', 'bowtie2', 'calibrators')
-    conda:
-        'envs/calibrators.yaml'
-    singularity:
-        'docker://flatberg/filter:0.1'
-    shell:
-        'bowtie2-build {input} {params.index}'
-
-rule calibrators_filter_bowtie:
+rule spikein_filter_bowtie:
     input:
         fastq = _filter_get_trimmed,
-        index = rules.calibrators_bowtie_build_index.output
+        index = get_spikein_index() + '.1.ebwt'
     output:
-        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.calibrators.bowtie.clean.fastq'),
-        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bowtie.counts')
-    conda:
-        'envs/calibrators.yaml'
+        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.spikein.bowtie.clean.fastq'),
+        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.spikein.bowtie.counts')
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['bowtie_samtools']
     params:
         args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
-        index = rules.calibrators_bowtie_build_index.params.index
+        index = get_spikein_index()
     threads:
-        2
+        4
     log:
-        bowtie = 'logs/{sample}/filter.calibrators.bowtie.log',
-        error = 'logs/{sample}/filter.error'
+        log = join(FILTER_INTERIM, '{sample}', 'filter.spikein.bowtie.log'),
+        error = join(FILTER_INTERIM, '{sample}', 'filter.error')
     shell:
         'bowtie {params.index} '
         '{input.fastq} '
@@ -122,26 +59,24 @@ rule calibrators_filter_bowtie:
         '2>> {log.bowtie} '
         '| samtools view -q 5 -S  - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
-        
-rule calibrators_filter_bowtie2:
+
+rule spikein_filter_bowtie2:
     input:
         fastq = _filter_get_trimmed,
-        index = rules.calibrators_bowtie2_build_index.output
+        index = get_spikein_index() + '.1.bt2'
     output:
-        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.calibrators.bowtie2.clean.fastq'),
-        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bowtie2.counts')
-    conda:
-        'envs/calibrators.yaml'
+        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.spikein.bowtie2.clean.fastq'),
+        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.spikein.bowtie2.counts')
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['bowtie2_samtools']
     params:
         args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
-        index = rules.calibrators_bowtie2_build_index.params.index
+        index = get_spikein_index()
     threads:
         2
     log:
-        bowtie = 'logs/{sample}/filter.calibrators.bowtie2.log',
-        error = 'logs/{sample}/filter.error'
+        log = join(FILTER_INTERIM, '{sample}', 'filter.spikein.bowtie.log'),
+        error = join(FILTER_INTERIM, '{sample}', 'filter.error')
     shell:
         'bowtie2 '
         '-U {input.fastq} '
@@ -153,47 +88,13 @@ rule calibrators_filter_bowtie2:
         '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
 
-rule calibrators_bbmap_build_index:
-    input:
-         rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
-    output:
-        join(CAL_DIR, 'index', 'bbmap', 'ref', 'genome', '1', 'info.txt')
-    params:
-        index = join(CAL_DIR, 'index', 'bbmap')
-    conda:
-        'envs/calibrators.yaml'
-    singularity:
-        'docker://flatberg/filter:0.1'
-    shell:
-        'bbmap.sh ref={input} path={params.index}'
-
-rule calibrators_filter_bbduk:
-    input:
-        fastq = _filter_get_trimmed,
-        ref = rules.calibrators_extend.output if CALIBRATORS_EXTEND else rules.calibrators_to_dna.output
-    output:
-        fastq = join(FILTER_INTERIM, '{sample}', '{sample}.calibrators.bbduk.clean.fastq'),
-        counts = join(FILTER_PROCESSED, '{sample}', '{sample}.calibrators.bbduk.counts')
-    conda:
-        'envs/calibrators.yaml'
-    singularity:
-        'docker://flatberg/filter:0.1'
-    threads:
-        4
-    log:
-        'logs/{sample}/filter.calibrators.bbduk.log'
-    shell:
-        'bbduk.sh in={input.fastq} overwrite=true outu={output.fastq} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
-
 def _filter_get_calibrator_clean(wildcards):
-    cal = config['filter'].get('filter_calibrators', True)
-    cal_quant = config['filter'].get('calibrator_quantifier', 'bowtie')
+    cal = config['filter']['spikein'].get('filter', False)
+    cal_quant = config['filter']['spikein'].get('method', 'unitas')
+    if cal_quant == 'unitas':
+        assert(config['quant'].get('method') == 'unitas')
+        cal = False
     if cal:
-        if cal_quant in ['bowtie', 'bbduk']:
-            return join(FILTER_INTERIM, wildcards.sample, '{}.calibrators.{}.clean.fastq'.format(wildcards.sample, cal_quant))
-        elif cal_quant == 'unitas':
-            assert(config['filter'].get('quant') == 'unitas')
-            return _filter_get_trimmed(wildcards)
-        else:
-            raise ValueError('calibrator quantifier option not valid: {}'.format(cal_quant))
+        return join(FILTER_INTERIM, wildcards.sample, '{}.spikein.{}.clean.fastq'.format(wildcards.sample, cal_quant))
+        
     return _filter_get_trimmed(wildcards)
