@@ -10,7 +10,7 @@ if os.path.exists(extra_conf_fn):
         update_config2(config, c)
         
 include:
-    'mirge.db'
+    join(GCFDB_DIR, 'mirge.db')
 
 rule mirge_symlink:
     input:
@@ -26,7 +26,7 @@ rule mirge_symlink:
         os.symlink(src, dst)
         print('symlinking: {} > {}'.format(src, dst))
 
-rule mirge_annotate:
+rule mirge_quant:
     input:
         fastq = expand(join(QUANT_INTERIM, 'mirge', 'fastq', '{sample}.fastq'), sample=SAMPLES),
         db = join(EXT_DIR, 'mirge', MIRGE_ORG, 'annotation.Libs', 'human_trna.str') #fixme: need to work on other than human

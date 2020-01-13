@@ -5,17 +5,8 @@ import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 include:
-    '../gcfdb/unitas.db'
+    join(GCFDB_DIR, 'unitas.db')
 
-rule contaminants_unitas:
-    input:
-        get_contaminants_fasta()
-    params:
-        script = srcdir('scripts/contaminants_unitas.py')
-    output:
-        join(QUANT_INTERIM, 'unitas', '_contaminants_unitas_formatted.fa')
-    shell:
-        'python {params.script} {input} > {output}'
 
 rule spikein_unitas:
     input:
@@ -28,9 +19,9 @@ rule spikein_unitas:
         'python {params.script} {input} > {output}'
         
 UNITAS_REFSEQ = []
-if config['filter']['spikein']['quant'] and config['filter']['spikein']['method'] == 'unitas':
+if not config['filter']['spikein']['filter'] and config['filter']['spikein']['quantifier'] == 'unitas':
     UNITAS_REFSEQ.append(rules.spikein_unitas.output)
-if config['filter']['contaminants']['quant'] and config['filter']['contaminants']['method'] == 'unitas':
+if not config['filter']['contaminants']['filter'] and config['filter']['contaminants']['quantifier'] == 'unitas':
     UNITAS_REFSEQ.append(rules.contaminants_unitas.output)
     
 rule unitas_extra_reference:
@@ -42,21 +33,11 @@ rule unitas_extra_reference:
         'cat {input} > {output}'
     
 UNITAS_ARGS = ''
-if config['filter'].get('filter_ribosomal'):
-    if config['filter']['ribosomal_quantifier'] == 'unitas':
-        UNITAS_ARGS += '--riborase '
-
+if not config['filter']['ribosomal']['filter'] and config['filter']['ribosomal']['quantifier'] == 'unitas':
+    UNITAS_ARGS += '--riborase '
 
 if len(UNITAS_REFSEQ) > 0:
     UNITAS_ARGS += '-refseq {} '.format(abspath(join(QUANT_INTERIM, 'unitas', 'refseq.fa')))
-
-_unitas_map = {'homo_sapiens': 'Human',
-              'human': 'Human',
-               'hsa': 'Human',
-               'mus_musculus': 'Mouse',
-               'mouse': 'Mouse',
-               'mmu': 'Mouse'}
-UNITAS_ORG = _unitas_map[config.get('organism')]
 
 rule unitas:
     input:
@@ -80,7 +61,7 @@ rule unitas:
         pirna = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
         mirtable_ext= join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
     singularity:
-        'docker://gcfntnu/unitas:1.7.0'
+        'docker://' + config['docker']['unitas']
     threads:
         2
     shell:

@@ -12,7 +12,7 @@ rule filter_adapter_atropos:
     params:
         args = '--mirna'
     singularity:
-        'docker://jdidion/atropos:latest'
+        'docker://' + config['docker']['atropos']
     threads:
         4
     log:
@@ -33,7 +33,7 @@ rule filter_umidedup:
     output:
         temp(join(FILTER_INTERIM, '{sample}', '{sample}.dup.fastq'))
     singularity:
-        'docker://quay.io/biocontainers/fastx_toolkit:0.0.14--hfc679d8_7'
+        'docker://' + config['docker']['fastx_toolkit']
     shell:
         'fastx_collapser -i {input} -o {output}'
     
@@ -47,7 +47,7 @@ rule filter_bioscientific_trimmed:
     threads:
         4
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['fastp']
     log:
         html = 'logs/{sample}/fastp.trimmed.html',
         json = 'logs/{sample}/fastp.trimmed.json'
@@ -68,10 +68,8 @@ rule filter_bioscientific_untrimmed:
         '-f 4 -A -G --low_complexity_filter'
     threads:
         4
-    conda:
-        'envs/filter.yaml'
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['fastp']
     log:
         html = 'logs/{sample}/fastp.untrimmed.html',
         json = 'logs/{sample}/fastp.untrimmed.json'
@@ -101,10 +99,8 @@ rule filter_truseq:
         '-A -G --low_complexity_filter'
     threads:
         4
-    conda:
-        'envs/filter.yaml'
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['fastp']
     log:
         html = 'logs/{sample}/fastp.truseq.html',
         json = 'logs/{sample}/fastp.json'
@@ -116,26 +112,31 @@ rule filter_truseq:
         '--html {log.html} '
 
 rule filter_mirtrace_config:
-    input:
-        _filter_get_raw
     output:
-        temp('.filter_mirtrace.conf')
+        '.filter_mirtrace.conf'
+    params:
+        adapter = LIBPREP['adapter']
     run:
-        with open(input[0]) as fh:
-            for k, v in config['samples']:
-                els = [v['R1'], k, params.adapter]
+        with open(output[0], 'w') as fh:
+            for k, v in config['samples'].items():
+                fn = join(config['fastq_dir'], v['R1'])
+                els = [fn, k, params.adapter]
                 fh.write(','.join(els) + '\n')
-
+        
 rule filter_mirtrace:
     input:
-        fastq = _filter_get_raw,
         config = '.filter_mirtrace.conf'
     params:
         outdir = join(FILTER_INTERIM, 'mirtrace'),
         protocol = LIBPREP['mirtrace']['protocol'],
-        species = 'hsa'
+        species = 'hsa',
+        title = config.get('project_id', 'GCF-0000-00')
+    singularity:
+        'docker://' + config['docker']['mirtrace']
+    threads:
+        4
     output:
-        
+        join(FILTER_INTERIM, 'mirtrace', 'trimmed.mirtrace.fastq')
     shell:
         'mirtrace qc '
         '-s {params.species} '

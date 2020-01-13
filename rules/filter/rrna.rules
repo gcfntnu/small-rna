@@ -5,6 +5,10 @@ NOTES:
 from os.path import join
 
 RRNA_REF = config['filter']['ribosomal'].get('ref', 'ncbi')
+ORG = config['organism']
+
+include:
+    join(GCFDB_DIR, 'sortmerna.db')
 
 def rrna_get_fasta(*args, **kw):
     ref = config['filter']['ribosomal']['ref']
@@ -42,7 +46,7 @@ rule rrna_filter_se_bowtie:
         R1 = join(FILTER_INTERIM, '{merge}', 'rrna', 'bowtie', '{sample}_R1.fastq'),
         counts = join(FILTER_INTERIM, '{merge}', 'rrna', 'bowtie', '{sample}.counts')
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['bowtie_samtools']
     params:
         args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
         index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'rrna', 'bowtie', 'rrna')
@@ -71,6 +75,8 @@ rule rrna_filter_se_bowtie2:
     params:
         args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
         index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'rrna', 'bowtie2', 'rrna')
+    singularity:
+        'docker://' + config['docker']['bowtie2_samtools']
     threads:
         2
     log:
@@ -87,18 +93,6 @@ rule rrna_filter_se_bowtie2:
         '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
 
-rule rrna_build_index_bbmap:
-    input:
-         rules.rrna_fasta.output
-    output:
-        join(EXT_DIR, RRNA_REF, ORG, 'index', 'bbmap', 'ref', 'genome', '1', 'info.txt')
-    params:
-        index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'bbmap')
-    singularity:
-        'docker://quay.io/biocontainers/bbmap'
-    shell:
-        'bbmap.sh ref={input} path={params.index}'
-
 
 rule rrna_filter_se_bbduk_universal:
     input:
@@ -108,7 +102,7 @@ rule rrna_filter_se_bbduk_universal:
         R1 = join(FILTER_INTERIM, '{merge}', 'rrna', 'bbduk_universal', '{sample}_R1.fastq'),
         counts = join(FILTER_INTERIM, '{merge}', 'rrna', 'bbduk_universal', '{sample}.counts')
     singularity:
-        'docker://quay.io/biocontainers/bbduk'
+        'docker://' + config['docker']['bbmap']
     log:
         'logs/{sample}/filter.{merge}.rrna.bbduk.log'
     threads:
@@ -116,7 +110,6 @@ rule rrna_filter_se_bbduk_universal:
     shell:
         'bbduk.sh t={threads} overwrite=true in={input.R1} k=31 rcomp=f outu={output.R1} stats={output.counts} ref={input.ref} 2> {log}'
 
-SMDB = config['db']['sortmerna']['db'].split(',')
 rule rrna_filter_se_sortmerna:
     input:
         R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', config['filter']['contaminants']['quantifier'], '{sample}_R1.fastq'),
@@ -128,7 +121,7 @@ rule rrna_filter_se_sortmerna:
         args = '--fastx --sam ',
         ref = ':'.join([','.join(i) for i in zip(expand(join(EXT_DIR, 'sortmerna', 'fasta', '{db}.fasta'), db=SMDB), expand(join(EXT_DIR, 'sortmerna', 'index', '{db}.idx'), db=SMDB))])
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['sortmerna']
     shell:
         'sortmerna '
         '--reads {input.R1} '

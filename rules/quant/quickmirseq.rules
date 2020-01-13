@@ -2,7 +2,7 @@
 from os.path import dirname, abspath
 
 include:
-    '../gcfdb/quickmirseq.db'
+    join(GCFDB_DIR, 'quickmirseq.db')
     
 rule quickmirseq_symlink:
     input:
@@ -25,7 +25,7 @@ rule quickmirseq_symlink:
             
 rule quickmirseq_config:
     input:
-        db = join(EXT_DIR, 'quickmirseq', '.db_done')
+        db = join(EXT_DIR, 'quickmirseq', config['organism'], '.done')
     params:
         fastq_dir = rules.quickmirseq_symlink.params.fastq_dir,
         species = config['organism'],
@@ -35,7 +35,7 @@ rule quickmirseq_config:
     threads:
         8
     output:
-        join(QUANT_PROCESSED, 'quickmirseq', 'quickmirseq.conf')
+        join(QUANT_INTERIM, 'quickmirseq', 'quickmirseq.conf')
     shell:
         """
         echo SPECIES={params.species} >> {output}
@@ -61,7 +61,7 @@ rule quickmirseq_config:
         echo OFFSET_ANALYSIS=yes >> {output}
         """    
 
-rule quickmirseq:
+rule quickmirseq_quant:
     input:
         samples = expand(join(QUANT_INTERIM, 'quickmirseq', 'fastq', '{sample}.fastq'), sample=SAMPLES),
         sample_file = join(QUANT_INTERIM, 'quickmirseq', 'allids.txt'),
@@ -74,7 +74,7 @@ rule quickmirseq:
         annotation = join(QUANT_PROCESSED, 'quickmirseq', 'readAnnotDistribution.csv'),
         unmapped = join(QUANT_PROCESSED, 'quickmirseq', 'unmapped.csv')
     singularity:
-        'docker://gcfntnu/quickmirseq:1.0'
+        'docker://' + config['docker']['quickmirseq']
     shell:
         'perl  $QuickMIRSeq/QuickMIRSeq.pl  '
         '{input.sample_file} '
@@ -82,4 +82,4 @@ rule quickmirseq:
 
 rule quickmirseq_all:
     input:
-        rules.quickmirseq.output
+        rules.quickmirseq_quant.output

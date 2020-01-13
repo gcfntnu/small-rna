@@ -25,66 +25,22 @@ rule contaminants_fasta:
     input:
         contaminants_get_fasta
     output:
-        join(EXT_DIR, 'contaminants', 'fasta', 'contaminants.fa')
+        join(INTERIM_DIR, 'contaminants', 'fasta', 'contaminants.fa')
     shell:
         'cat {input} > {output}'
-
-rule contaminants_unitas:
-    input:
-        rules.contaminants_fasta.output
-    params:
-        script = srcdir('scripts/contaminants_unitas.py')
-    output:
-        temp(join(INTERIM_DIR, '_contaminants_unitas_formatted.fa'))
-    shell:
-        'python {params.script} {input} > {output}'
-
-rule contaminants_build_index_bowtie:
-    input:
-        rules.contaminants_fasta.output
-    output:
-        join(CONT_DIR, 'index', 'bowtie', 'contaminants.1.ebwt'),
-        join(CONT_DIR, 'index', 'bowtie', 'contaminants.2.ebwt'),
-        join(CONT_DIR, 'index', 'bowtie', 'contaminants.3.ebwt'),
-        join(CONT_DIR, 'index', 'bowtie', 'contaminants.4.ebwt'),
-        join(CONT_DIR, 'index', 'bowtie', 'contaminants.rev.1.ebwt'),
-        join(CONT_DIR, 'index', 'bowtie', 'contaminants.rev.2.ebwt')
-    params:
-        index = join(CONT_DIR, 'index', 'bowtie', 'contaminants')
-    singularity:
-        'docker://flatberg/filter:0.1'
-    shell:
-        'bowtie-build {input} {params.index}'
-
-rule contaminants_build_index_bowtie2:
-    input:
-        rules.contaminants_fasta.output
-    output:
-        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.1.bt2'),
-        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.2.bt2'),
-        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.3.bt2'),
-        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.4.bt2'),
-        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.rev.1.bt2'),
-        join(CONT_DIR, 'index', 'bowtie2', 'contaminants.rev.2.bt2')
-    params:
-        index = join(CONT_DIR, 'index', 'bowtie2', 'contaminants')
-    singularity:
-        'docker://flatberg/filter:0.1'
-    shell:
-        'bowtie2-build {input} {params.index}'
 
 rule contaminants_filter_se_bowtie:
     input:
         R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
-        index = rules.contaminants_build_index_bowtie.output
+        index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie', 'contaminants.1.ebwt')
     output:
         R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie', '{sample}_R1.fastq'),
         counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie', '{sample}_R1.counts')
     singularity:
-        'docker://flatberg/filter:0.1'
+        'docker://' + config['docker']['bowtie_samtools']
     params:
         args = '-n 0 -k 1 -l 18 -q --best --norc -S ',
-        index = rules.contaminants_build_index_bowtie.params.index
+        index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie', 'contaminants')
     threads:
         2
     log:
@@ -103,15 +59,17 @@ rule contaminants_filter_se_bowtie:
 rule contaminants_filter_se_bowtie2:
     input:
         R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
-        index = rules.contaminants_build_index_bowtie2.output
+        index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie2', 'contaminants.1.bt2')
     output:
         R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie2', '{sample}_R1.fastq'),
         counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie2', '{sample}_R1.counts')
     params:
         args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
-        index = rules.contaminants_build_index_bowtie2.params.index
+        index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie2', 'contaminants')
     threads:
         2
+    singularity:
+        'docker://' + config['docker']['bowtie2_samtools']
     log:
         bowtie = 'logs/{sample}/filter.{merge}.contaminants.bowtie2.log',
         error = 'logs/{sample}/filter.{merge}.error'
@@ -125,36 +83,6 @@ rule contaminants_filter_se_bowtie2:
         '2>> {log.bowtie} '
         '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
-
-rule contaminants_build_index_bbmap:
-    input:
-         rules.contaminants_fasta.output
-    output:
-        join(CONT_DIR, 'index', 'bbmap', 'ref', 'genome', '1', 'info.txt')
-    params:
-        index = join(CONT_DIR, 'index', 'bbmap')
-    conda:
-        'envs/contaminants.yaml'
-    singularity:
-        'docker://quay.io/biocontainers/bbmap'
-    shell:
-        'bbmap.sh ref={input} path={params.index}'
-
-rule contaminants_filter_se_bbduk:
-    input:
-        R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
-        ref = rules.contaminants_fasta.output
-    output:
-        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bbduk', '{sample}_R1.fastq'),
-        counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bbduk', '{sample}_R1.counts')
-    singularity:
-        'docker://quay.io/biocontainers/bbmap'
-    threads:
-        4
-    log:
-        'logs/{sample}/filter.{merge}.contaminants.bbduk.log'
-    shell:
-        'bbduk.sh in={input.R1} overwrite=true outu={output.R1} threads={threads} rcomp=f k=21 stats={output.counts} ref={input.ref} 2>{log}'
 
         
 rule contaminants_filter_skip:
