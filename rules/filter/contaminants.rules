@@ -12,6 +12,8 @@ def contaminants_get_fasta(*args, **kw):
     for r in ref:
         if r.lower() == 'univec':
             out.append(join(EXT_DIR, 'univec', 'fasta', 'univec.fa'))
+        if r.lower() == 'univec_core':
+            out.append(join(EXT_DIR, 'univec_core', 'fasta', 'univec_core.fa'))
         if r.lower() == 'emvec':
             out.append(join(EXT_DIR, 'emvec', 'fasta', 'emvec.fa'))
         if r.lower() == 'common_bacterial_euk':
@@ -31,11 +33,11 @@ rule contaminants_fasta:
 
 rule contaminants_filter_se_bowtie:
     input:
-        R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
+        R1 = _filter_get_calibrator_clean,
         index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie', 'contaminants.1.ebwt')
     output:
-        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie', '{sample}_R1.fastq'),
-        counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie', '{sample}_R1.counts')
+        R1 = join(FILTER_INTERIM, 'contaminants', 'bowtie', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, 'contaminants', 'bowtie', '{sample}.counts')
     singularity:
         'docker://' + config['docker']['bowtie_samtools']
     params:
@@ -44,8 +46,8 @@ rule contaminants_filter_se_bowtie:
     threads:
         2
     log:
-        bowtie = 'logs/{sample}/filter.{merge}.contaminants.bowtie.log',
-        error = 'logs/{sample}/filter.{merge}.contaminants.bowtie.error'
+        bowtie = join(FILTER_INTERIM, 'contaminants', 'bowtie', '{sample}.filter.log'),
+        error = join(FILTER_INTERIM, 'contaminants', 'bowtie', '{sample}.filter.error')
     shell:
         'bowtie {params.index} '
         '{input.R1} '
@@ -58,11 +60,11 @@ rule contaminants_filter_se_bowtie:
         
 rule contaminants_filter_se_bowtie2:
     input:
-        R1 = join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R1.fastq'),
+        R1 = _filter_get_calibrator_clean,
         index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie2', 'contaminants.1.bt2')
     output:
-        R1 = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie2', '{sample}_R1.fastq'),
-        counts = join(FILTER_INTERIM, '{merge}', 'contaminants', 'bowtie2', '{sample}_R1.counts')
+        R1 = join(FILTER_INTERIM, 'contaminants', 'bowtie2', '{sample}_R1.fastq'),
+        counts = join(FILTER_INTERIM, 'contaminants', 'bowtie2', '{sample}.counts')
     params:
         args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
         index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie2', 'contaminants')
@@ -71,8 +73,8 @@ rule contaminants_filter_se_bowtie2:
     singularity:
         'docker://' + config['docker']['bowtie2_samtools']
     log:
-        bowtie = 'logs/{sample}/filter.{merge}.contaminants.bowtie2.log',
-        error = 'logs/{sample}/filter.{merge}.error'
+        bowtie = join(FILTER_INTERIM, 'contaminants', 'bowtie2', '{sample}.filter.log'),
+        error = join(FILTER_INTERIM, 'contaminants', 'bowtie2', '{sample}.filter.error')
     shell:
         'bowtie2 '
         '-U {input.R1} '
@@ -84,11 +86,15 @@ rule contaminants_filter_se_bowtie2:
         '| samtools view -S -q5 - | cut -f3 | sort | uniq -c  > {output.counts} '
         '2>> {log.error} '
 
-        
-rule contaminants_filter_skip:
-    input:
-        join(FILTER_INTERIM, '{merge}', 'spikein', config['filter']['spikein']['quantifier'], '{sample}_R{read_num}.fastq')
-    output:
-        join(FILTER_INTERIM, '{merge}', 'contaminants', 'skip', '{sample}_R{read_num}.fastq')
-    shell:
-        'ln -sr {input} {output}'
+
+def _filter_get_contaminants_clean(wildcards):
+    quant = config['filter']['contaminants']['quantifier']
+    if quant == 'unitas':
+        assert(config['quant'].get('method') == 'unitas')
+        return _filter_get_calibrator_clean(wildcards)
+    elif quant in ['bowtie', 'bowtie2']:
+        return join(FILTER_INTERIM, 'contaminants', quant, '{}_R1.fastq'.format(wildcards.sample))
+    elif quant == 'skip':
+        return _filter_get_calibrator_clean(wildcards)
+    else:
+        raise ValueError('contaminants quantifier option not valid: {}'.format(quant))

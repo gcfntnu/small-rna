@@ -29,8 +29,11 @@ rule unitas_extra_reference:
         UNITAS_REFSEQ
     output:
         join(QUANT_INTERIM, 'unitas', 'refseq.fa')
-    shell:
-        'cat {input} > {output}'
+    run:
+        if len(input) > 0:
+            shell('cat {input} > {output}')
+        else:
+            shell('touch {output}')
     
 UNITAS_ARGS = ''
 if not config['filter']['ribosomal']['filter'] and config['filter']['ribosomal']['quantifier'] == 'unitas':

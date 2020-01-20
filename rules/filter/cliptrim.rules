@@ -3,12 +3,21 @@ from os.path import join
 
 ADAPTER = config.get('adapter') or LIBPREP.get('single_end', {}).get('adapter') or LIBPREP.get('adapter')
 
+
+rule filter_merge_fastq:
+    input:
+        R1 = _get_raw_fastq
+    output:
+        R1 = temp(join(FILTER_INTERIM, 'merged_fastq', '{sample}.fastq'))
+    shell:
+        'zcat {input.R1} > {output.R1}'
+
 rule filter_adapter_atropos:
     input:
-        fastq = _filter_get_raw
+        fastq = join(FILTER_INTERIM, 'merged_fastq', '{sample}.fastq')
     output:
-        trimmed = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.atropos.fastq')),
-        untrimmed = temp(join(FILTER_INTERIM, '{sample}', '{sample}.untrimmed.atropos.fastq'))
+        trimmed = temp(join(FILTER_INTERIM, 'atropos', '{sample}.trimmed.fastq')),
+        untrimmed = temp(join(FILTER_INTERIM, 'atropos', '{sample}.untrimmed.fastq'))
     params:
         args = '--mirna'
     singularity:
@@ -31,7 +40,7 @@ rule filter_umidedup:
     input:
         fastq = rules.filter_adapter_atropos.output.trimmed
     output:
-        temp(join(FILTER_INTERIM, '{sample}', '{sample}.dup.fastq'))
+        temp(join(FILTER_INTERIM, 'dedup', '{sample}.dup.fastq'))
     singularity:
         'docker://' + config['docker']['fastx_toolkit']
     shell:
@@ -41,7 +50,7 @@ rule filter_bioscientific_trimmed:
     input:
         fastq = rules.filter_umidedup.output if config['filter'].get('dedup', False) else rules.filter_adapter_atropos.output.trimmed
     output:
-        fastq = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.1.fastq'))
+        fastq = temp(join(FILTER_INTERIM, 'fastp', '{sample}.trimmed.bioscientific.1.fastq'))
     params:
         '-f 4 -t 4 -A -G --low_complexity_filter'
     threads:
@@ -63,7 +72,7 @@ rule filter_bioscientific_untrimmed:
     input:
         fastq = rules.filter_adapter_atropos.output.untrimmed
     output:
-        fastq = temp(join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.2.fastq'))
+        fastq = temp(join(FILTER_INTERIM, 'fastp', '{sample}.trimmed.bioscientific.2.fastq'))
     params:
         '-f 4 -A -G --low_complexity_filter'
     threads:
@@ -86,7 +95,7 @@ rule filter_bioscientific:
         rules.filter_bioscientific_trimmed.output.fastq,
         rules.filter_bioscientific_untrimmed.output.fastq
     output:
-        join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.bioscientific.fastq')
+        join(FILTER_INTERIM, 'fastp', '{sample}.trimmed.bioscientific.fastq')
     shell:
         'cat {input} > {output}'
 
@@ -94,7 +103,7 @@ rule filter_truseq:
     input:
         rules.filter_adapter_atropos.output
     output:
-        join(FILTER_INTERIM, '{sample}', '{sample}.trimmed.truseq.fastq')
+        join(FILTER_INTERIM, 'fastp', '{sample}.trimmed.truseq.fastq')
     params:
         '-A -G --low_complexity_filter'
     threads:
@@ -115,7 +124,7 @@ rule filter_mirtrace_config:
     output:
         '.filter_mirtrace.conf'
     params:
-        adapter = LIBPREP['adapter']
+        adapter = ADAPTER
     run:
         with open(output[0], 'w') as fh:
             for k, v in config['samples'].items():
@@ -148,13 +157,19 @@ rule filter_mirtrace:
         '-f -w '
 
 def _filter_get_trimmed(wildcards):
-    if not config['filter'].get('filter_trim', True):
-        return _filter_get_raw(wildcards)
+    if config['filter']['trim']['quantifier'] == 'skip':
+        return join(FILTER_INTERIM, 'merged_fastq', '{sample}.fastq')
+    
     if 'kit' in wildcards and wildcards.kit is not None:
         kit = wildcards.kit
     else:
         kit = config.get('libprepkit')
         
-    if kit not in ['TruSeq Small RNA Library Prep Kit', 'Bioo Scientific NEXTflex Small RNA-Seq Kit v3']:
+    KITS = {'TruSeq Small RNA Library Prep Kit': 'truseq',
+            'Bioo Scientific NEXTflex Small RNA-Seq Kit v3': 'bioscientific'}
+    
+    if kit not in KITS:
         raise ValueError('Kit argument: {} not supported'.format(kit))
-    return join(FILTER_INTERIM, wildcards.sample, '{}.trimmed.{}.fastq'.format(wildcards.sample, kit))
+    kit = KITS[kit]
+    print(join(FILTER_INTERIM, 'fastp', '{}.trimmed.{}.fastq'.format(wildcards.sample, kit)))
+    return join(FILTER_INTERIM, 'fastp', '{}.trimmed.{}.fastq'.format(wildcards.sample, kit))

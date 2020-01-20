@@ -29,9 +29,9 @@ rule mirge_symlink:
 rule mirge_quant:
     input:
         fastq = expand(join(QUANT_INTERIM, 'mirge', 'fastq', '{sample}.fastq'), sample=SAMPLES),
-        db = join(EXT_DIR, 'mirge', MIRGE_ORG, 'annotation.Libs', 'human_trna.str') #fixme: need to work on other than human
+        db = join(EXT_DIR, 'mirge', ORG, MIRGE_ORG, 'annotation.Libs', 'human_trna.str') #fixme: need to work on other than human
     params:
-        lib = join(EXT_DIR, 'mirge'),
+        lib = join(EXT_DIR, 'mirge', ORG),
         org = MIRGE_ORG,
         db = config['quant']['mirge']['db'],
         args = '-di -ai -gff -ex 0 -trf',

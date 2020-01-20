@@ -64,10 +64,10 @@ rule quickmirseq_config:
 rule quickmirseq_quant:
     input:
         samples = expand(join(QUANT_INTERIM, 'quickmirseq', 'fastq', '{sample}.fastq'), sample=SAMPLES),
-        sample_file = join(QUANT_INTERIM, 'quickmirseq', 'allids.txt'),
         config = join(QUANT_INTERIM, 'quickmirseq', 'quickmirseq.conf')
     params:
-        fastq_dir = rules.quickmirseq_symlink.params.fastq_dir
+        fastq_dir = rules.quickmirseq_symlink.params.fastq_dir,
+        sample_file = join(QUANT_INTERIM, 'quickmirseq', 'allids.txt')
     output:
         mir_table = join(QUANT_PROCESSED, 'quickmirseq', 'miR.Counts.csv'),
         isomir_table = join(QUANT_PROCESSED, 'quickmirseq', 'isoform.Counts.csv'),
@@ -77,7 +77,7 @@ rule quickmirseq_quant:
         'docker://' + config['docker']['quickmirseq']
     shell:
         'perl  $QuickMIRSeq/QuickMIRSeq.pl  '
-        '{input.sample_file} '
+        '{params.sample_file} '
         '{input.config} '
 
 rule quickmirseq_all:
