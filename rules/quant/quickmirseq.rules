@@ -6,7 +6,7 @@ include:
     
 rule quickmirseq_symlink:
     input:
-        fastq = get_filtered_fastq
+        fastq = get_processed_fastq
     params:
         fastq_dir = join(QUANT_INTERIM, 'quickmirseq', 'fastq'),
         samples = join(QUANT_INTERIM, 'quickmirseq', 'allids.txt')
