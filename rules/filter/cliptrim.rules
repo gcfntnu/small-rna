@@ -2,7 +2,7 @@
 from os.path import join
 
 ADAPTER = config.get('adapter') or LIBPREP.get('single_end', {}).get('adapter') or LIBPREP.get('adapter')
-
+print(LIBPREP)
 
 rule filter_merge_fastq:
     input:
@@ -122,7 +122,7 @@ rule filter_truseq:
 
 rule filter_mirtrace_config:
     output:
-        '.filter_mirtrace.conf'
+        temp('.filter_mirtrace.conf')
     params:
         adapter = ADAPTER
     run:
@@ -143,9 +143,9 @@ rule filter_mirtrace:
     singularity:
         'docker://' + config['docker']['mirtrace']
     threads:
-        4
+        48
     output:
-        join(FILTER_INTERIM, 'mirtrace', 'trimmed.mirtrace.fastq')
+        join(FILTER_INTERIM, 'mirtrace', 'qc_passed_reads.all.collapsed', '{sample}_R1.fasta')
     shell:
         'mirtrace qc '
         '-s {params.species} '
@@ -159,6 +159,8 @@ rule filter_mirtrace:
 def _filter_get_trimmed(wildcards):
     if config['filter']['trim']['quantifier'] == 'skip':
         return join(FILTER_INTERIM, 'merged_fastq', '{sample}.fastq')
+    elif config['filter']['trim']['quantifier'] == 'mirtrace':
+        return join(FILTER_INTERIM, 'mirtrace', 'qc_passed_reads.all.collapsed', '{sample}_R1.fasta')
     
     if 'kit' in wildcards and wildcards.kit is not None:
         kit = wildcards.kit
