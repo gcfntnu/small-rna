@@ -19,9 +19,9 @@ rule spikein_unitas:
         'python {params.script} {input} > {output}'
         
 UNITAS_REFSEQ = []
-if not config['filter']['spikein']['filter'] and config['filter']['spikein']['quantifier'] == 'unitas':
+if config['filter']['spikein']['quantifier'] == 'unitas':
     UNITAS_REFSEQ.append(rules.spikein_unitas.output)
-if not config['filter']['contaminants']['filter'] and config['filter']['contaminants']['quantifier'] == 'unitas':
+if config['filter']['contaminants']['quantifier'] == 'unitas':
     UNITAS_REFSEQ.append(rules.contaminants_unitas.output)
     
 rule unitas_extra_reference:
@@ -42,6 +42,20 @@ if not config['filter']['ribosomal']['filter'] and config['filter']['ribosomal']
 if len(UNITAS_REFSEQ) > 0:
     UNITAS_ARGS += '-refseq {} '.format(abspath(join(QUANT_INTERIM, 'unitas', 'refseq.fa')))
 
+
+rule unitas_rundir:
+    input:
+        seqmap = rules.unitas_db.output.seqmap_exe,
+        refdump = rules.unitas_db.output.refdump
+    output:
+        temp('seqmap.exe'),
+        temp('UNITAS_refdump_{}'.format(ORG))
+    shell:
+        """
+        cp {input.seqmap} {output.seqmap} 
+        ln -sr {input.refdump} {output.refdump}
+        """
+        
 rule unitas:
     input:
         fastq = get_filtered_fastq,
