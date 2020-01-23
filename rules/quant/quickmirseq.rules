@@ -31,7 +31,7 @@ rule quickmirseq_config:
         species = config['organism'],
         rna_db = abspath(join(EXT_DIR, 'quickmirseq', ORG)),
         dna_bowtie_index = abspath(join(EXT_DIR, 'quickmirseq', ORG, 'genome')),
-        output = join(QUANT_PROCESSED, 'quickmirseq')
+        output = join(QUANT_INTERIM, 'quickmirseq')
     threads:
         8
     output:
@@ -69,10 +69,10 @@ rule quickmirseq_quant:
         fastq_dir = rules.quickmirseq_symlink.params.fastq_dir,
         sample_file = join(QUANT_INTERIM, 'quickmirseq', 'allids.txt')
     output:
-        mir_table = join(QUANT_PROCESSED, 'quickmirseq', 'miR.Counts.csv'),
-        isomir_table = join(QUANT_PROCESSED, 'quickmirseq', 'isoform.Counts.csv'),
-        annotation = join(QUANT_PROCESSED, 'quickmirseq', 'readAnnotDistribution.csv'),
-        unmapped = join(QUANT_PROCESSED, 'quickmirseq', 'unmapped.csv')
+        mir_table = join(QUANT_INTERIM, 'quickmirseq', 'miR.Counts.csv'),
+        isomir_table = join(QUANT_INTERIM, 'quickmirseq', 'isoform.Counts.csv'),
+        annotation = join(QUANT_INTERIM, 'quickmirseq', 'readAnnotDistribution.csv'),
+        unmapped = join(QUANT_INTERIM, 'quickmirseq', 'unmapped.csv')
     singularity:
         'docker://' + config['docker']['quickmirseq']
     shell:

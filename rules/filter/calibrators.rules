@@ -39,7 +39,7 @@ rule spikein_filter_bowtie:
         index = get_spikein_index() + '.1.ebwt'
     output:
         R1 = join(FILTER_INTERIM, 'spikein', 'bowtie', '{sample}_R1.fastq'),
-        counts = join(FILTER_PROCESSED, 'spikein', 'bowtie', '{sample}.counts')
+        counts = join(FILTER_INTERIM, 'spikein', 'bowtie', '{sample}.counts')
     singularity:
         'docker://' + config['docker']['bowtie_samtools']
     params:
@@ -66,7 +66,7 @@ rule spikein_filter_bowtie2:
         index = get_spikein_index() + '.1.bt2'
     output:
         R1 = join(FILTER_INTERIM, 'spikein', 'bowtie2', '{sample}_R1.fastq'),
-        counts = join(FILTER_PROCESSED, 'spikein', 'bowtie2', '{sample}.counts')
+        counts = join(FILTER_INTERIM, 'spikein', 'bowtie2', '{sample}.counts')
     singularity:
         'docker://' + config['docker']['bowtie2_samtools']
     params:

@@ -15,7 +15,7 @@ rule unitas_mirtrace_fasta:
         join(FILTER_INTERIM, 'mirtrace', 'unitas_fasta', '{sample}_R1.fasta')
     shell:
         """
-        sed -r '/>/ s/(.*)x([[:digit:]]+)(.*)/>\2/' {input} > {output}
+        sed -r '/>/ s/(.*)x([[:digit:]]+)(.*)/>\\2/' {input} > {output}
         """
 
 def get_unitas_seq(wildcards):
@@ -54,7 +54,7 @@ rule unitas_extra_reference:
             shell('touch {output}')
     
 UNITAS_ARGS = ''
-if not config['filter']['ribosomal']['filter'] and config['filter']['ribosomal']['quantifier'] == 'unitas':
+if config['filter']['ribosomal']['quantifier'] == 'unitas':
     UNITAS_ARGS += '--riborase '
 
 if len(UNITAS_REFSEQ) > 0:
@@ -63,50 +63,46 @@ if len(UNITAS_REFSEQ) > 0:
 
 rule unitas_rundir:
     input:
-        seqmap = rules.unitas_db.output.seqmap_exe,
-        refdump = rules.unitas_db.output.refdump
+        seqmap = rules.unitas_db.output.seqmap_exe
     output:
-        temp('seqmap.exe'),
-        temp('UNITAS_refdump_{}'.format(ORG))
+        seqmap = temp('seqmap.exe')
+    params:
+        outdir = rules.unitas_db.params.outdir
     shell:
         """
-        cp {input.seqmap} {output.seqmap} 
-        ln -sr {input.refdump} {output.refdump}
+        cp {input.seqmap} .
+        ln -srf {params.outdir} .
         """
         
 rule unitas:
     input:
+        seqmap = 'seqmap.exe',
         fastq = get_unitas_seq,
-        refseq = rules.unitas_extra_reference.output,
-        db = rules.unitas_db.output
+        refseq = rules.unitas_extra_reference.output
     params:
-        rundir = join(EXT_DIR, 'unitas'),
-        outdir = abspath(join(QUANT_PROCESSED, 'unitas', '{sample}')),
-        args = UNITAS_ARGS + ' -species_miR_only -keep_temp ',
-        org  = config.get('organism', 'homo_sapiens')
+        outdir = abspath(join(QUANT_INTERIM, 'unitas', '{sample}')),
+        args = UNITAS_ARGS + ' -species_miR_only ',
+        org  = config['organism']
     output:
-        html = join(QUANT_PROCESSED, 'unitas', '{sample}', 'results.html'),
-        trftable = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'),
-        annotation = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.annotation_summary.txt'),
-        full_annotation = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'),
-        target_hits = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.hits_per_target.txt'),
-        modifications = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)),
-        trf_table_ext = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.txt'),
-        mirtable = join(QUANT_PROCESSED, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)),
-        pirna = join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
-        mirtable_ext= join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
+        html = join(QUANT_INTERIM, 'unitas', '{sample}', 'results.html'),
+        trftable = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'),
+        annotation = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.annotation_summary.txt'),
+        full_annotation = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'),
+        target_hits = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.hits_per_target.txt'),
+        modifications = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)),
+        trf_table_ext = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.txt'),
+        mirtable = join(QUANT_INTERIM, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)),
+        pirna = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
+        mirtable_ext= join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
     singularity:
         'docker://' + config['docker']['unitas']
     threads:
         2
     shell:
         """
-        mkdir -p {params.rundir}
-        WORKDIR=$(pwd)
-        cd {params.rundir} || exit
-        unitas.pl -input $WORKDIR/{input.fastq} -s {params.org} -threads {threads} {params.args}
-        mv UNITAS_*_{wildcards.sample}.*fastq_#1/* {params.outdir}/
-        rm -rf UNITAS_*_{wildcards.sample}.*fastq_#1
+        unitas.pl -input {input.fastq} -s {params.org} -threads {threads} {params.args}
+        mv -f UNITAS_*{wildcards.sample}_R1.fast*_#1/* {params.outdir}/
+        rm -rf UNITAS_*{wildcards.sample}_R1.*fas*_#1
         """
 
 rule unitas_annotation2yaml:
@@ -115,91 +111,91 @@ rule unitas_annotation2yaml:
     params:
         script = srcdir('scripts/unitas_annotation2json.py')
     output:
-        join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.annotation_summary.json')
+        join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.annotation_summary.json')
     shell:
         'python {params.script} {input} > {output}'
 
 rule unitas_mirtable:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)), sample=SAMPLES)
+        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_mirtable.py')
     output:
-        counts = join(QUANT_PROCESSED, 'unitas', 'unitas.mir.counts')
+        counts = join(QUANT_INTERIM, 'unitas', 'unitas.mir.counts')
     shell:
         'python {params.script} {input} > {output}'
         
 rule unitas_isomirtable:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.txt'), sample=SAMPLES)
+        expand(rules.unitas.output.mirtable_ext, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_isomirtable.py')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.isomir.counts')
+        join(QUANT_INTERIM, 'unitas', 'unitas.isomir.counts')
     shell:
         'python {params.script} {input} > {output}'
 
 rule unitas_trftable:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'), sample=SAMPLES)
+        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_trftable.py')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.trf.counts')
+        join(QUANT_INTERIM, 'unitas', 'unitas.trf.counts')
     shell:
         'python {params.script} {input} > {output}'
         
 rule unitas_isotrftable:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.tRF-table.txt'), sample=SAMPLES)
+        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_isotrftable.py')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.isotrf.counts')
+        join(QUANT_INTERIM, 'unitas', 'unitas.isotrf.counts')
     shell:
         'python {params.script} {input} > {output}'
 
 rule unitas_allhits:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.hits_per_target.txt'), sample=SAMPLES)
+        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.hits_per_target.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_allhits.py')
         
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.allhits.counts')
+        join(QUANT_INTERIM, 'unitas', 'unitas.allhits.counts')
     shell:
         'python {params.script} {input} --output {output}'
         
 rule unitas_modifications:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)), sample=SAMPLES)
+        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_modifications.py'),
-        out = join(QUANT_PROCESSED, 'unitas', 'unitas.')
+        out = join(QUANT_INTERIM, 'unitas', 'unitas.')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.modification_per_position.counts'),
-        join(QUANT_PROCESSED, 'unitas', 'unitas.internal_modification.counts')
+        join(QUANT_INTERIM, 'unitas', 'unitas.modification_per_position.counts'),
+        join(QUANT_INTERIM, 'unitas', 'unitas.internal_modification.counts')
     shell:
         'python {params.script} -o {params.out} {input}'
         
 rule unitas_annotations:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.annotation_summary.txt'), sample=SAMPLES)
+        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.annotation_summary.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_annotations.py')
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.annotations.txt')
+        join(QUANT_INTERIM, 'unitas', 'unitas.annotations.txt')
     shell:
         'python {params.script} {input} > {output}'
 
 rule unitas_allfeatures:
     input:
-        expand(join(QUANT_PROCESSED, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'), sample=SAMPLES)
+        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'), sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_feature_counts.py')
         
     output:
-        join(QUANT_PROCESSED, 'unitas', 'unitas.featurecounts.counts')
+        join(QUANT_INTERIM, 'unitas', 'unitas.featurecounts.counts')
     shell:
         'python {params.script} --frac-counts {input} --output {output}'
         
