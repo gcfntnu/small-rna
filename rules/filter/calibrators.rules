@@ -92,7 +92,7 @@ def _filter_get_calibrator_clean(wildcards):
     cal_quant = config['filter']['spikein']['quantifier']
     if cal_quant == 'unitas':
         assert(config['quant'].get('method') == 'unitas')
-        cal = False
+        return _filter_get_trimmed(wildcards)
     elif cal_quant in ['bowtie', 'bowtie2']:
         return join(FILTER_INTERIM, 'spikein', cal_quant, '{}_R1.fastq'.format(wildcards.sample))
     elif cal_quant == 'skip':
