@@ -1,0 +1,69 @@
+BFQ_INTERIM = join(INTERIM_DIR, 'smallrna', 'bfq')
+
+rule bfq_pca:
+    input:
+        exprs = join(QUANT_INTERIM, 'unitas', 'unitas.mir.counts'),
+        sample_info =  join(INTERIM_DIR, 'sample_info.tsv')
+    params:
+        script = srcdir('scripts/plotpca.py')
+    singularity:
+        'docker://' + config['docker']['bfq_plot']
+    output:
+        join(BFQ_INTERIM, 'figs', 'pca_mqc.png'),
+    shell:
+        'python {params.script} {input.exprs} --sample-info {input.sample_info} --output {output}'
+
+
+rule bfq_qc:
+    input:
+        rules.align_all.input,
+        expand(rules.picard_rnametrics.output, sample=SAMPLES),
+        expand(rules.salmon_meta_info.output, sample=SAMPLES)
+
+
+rule bfq_exprs:
+    input:
+        gene_counts = join(QUANT_INTERIM, 'unitas', 'gene_rlog.tsv'),
+        gene_rlog = join(QUANT_INTERIM, 'unitas', 'deseq', 'gene_vst.tsv'),
+        gene_cpm = join(QUANT_INTERIM, 'unitas', 'gene_cpm.tsv'),
+        isomir_counts = join(QUANT_INTERIM, 'unitas', 'isomir_counts.tsv'),
+        isomor_vst = join(QUANT_INTERIM, 'unitas', 'deseq', 'isomir_rlog.tsv'),
+        transcript_tpm = join(QUANT_INTERIM, 'unitas', 'isomir_cpm.tsv'),
+        gene_info = join(QUANT_INTERIM, 'unitas', 'gene_info.tsv'),
+        tx_info = join(QUANT_INTERIM, 'unitas', 'isomir_info.tsv')
+    params:
+        outdir = join(BFQ_INTERIM, 'exprs')
+    output:
+        gene_counts = join(BFQ_INTERIM, 'exprs', 'gene_rlog.tsv'),
+        gene_rlog = join(BFQ_INTERIM, 'exprs', 'deseq', 'gene_vst.tsv'),
+        gene_cpm = join(BFQ_INTERIM, 'exprs', 'gene_cpm.tsv'),
+        isomir_counts = join(BFQ_INTERIM, 'exprs', 'isomir_counts.tsv'),
+        isomor_vst = join(BFQ_INTERIM, 'exprs', 'deseq', 'isomir_rlog.tsv'),
+        transcript_tpm = join(BFQ_INTERIM, 'exprs', 'isomir_cpm.tsv'),
+        gene_info = join(BFQ_INTERIM, 'exprs', 'gene_info.tsv'),
+        tx_info = join(BFQ_INTERIM, 'exprs', 'isomir_info.tsv') 
+    run:
+        for fn in input:
+            shell('ln -sr -t {params.outdir} {fn}')
+
+rule bfq_aligned:
+    input:
+        bam = expand(join(ALIGN_INTERIM, 'star', '{sample}.sorted.bam'), sample=SAMPLES),
+        bai = expand(join(ALIGN_INTERIM, 'star', '{sample}.sorted.bam.bai'), sample=SAMPLES),
+        md5 = expand(join(ALIGN_INTERIM, 'star', '{sample}.sorted.bam.md5'), sample=SAMPLES)
+    output:
+        bam = expand(join(BFQ_INTERIM, 'align', '{sample}.sorted.bam'), sample=SAMPLES),
+        bai = expand(join(BFQ_INTERIM, 'align', '{sample}.sorted.bam.bai'), sample=SAMPLES),
+        md5 = expand(join(BFQ_INTERIM, 'align', '{sample}.sorted.bam.md5'), sample=SAMPLES)
+    params:
+        outdir = join(BFQ_INTERIM, 'align')
+    run:
+        for fn in input:
+            shell('ln -sr -t {params.outdir} {fn}')
+        
+rule bfq_all:
+    input:
+        join(BFQ_INTERIM, 'figs', 'gene_vst_pca_mqc.png'),
+        rules.bfq_qc.input,
+        rules.bfq_exprs.output,
+        rules.bfq_aligned.output
