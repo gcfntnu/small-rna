@@ -3,6 +3,7 @@ import sys
 import os
 import glob
 import argparse
+import re
 import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
@@ -48,9 +49,9 @@ if __name__ == '__main__':
     isomirs = isomirs.loc[:,isomirs.sum(0) > args.min_count] 
     isomirs.to_csv(args.output, sep='\t')
     
-
+    
     DF_uniq = DF.loc[~DF.index.duplicated(),:]
-    ANNO = DF_uniq.loc[isomirs.index,:]
+    ANNO = DF_uniq.loc[isomirs.columns,:]
     gene_names = []
     patt = re.compile('(.*)(\\(.*\\))')
     for n in ANNO['miR-name']:
