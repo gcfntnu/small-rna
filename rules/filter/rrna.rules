@@ -144,7 +144,7 @@ def _filter_clean_fastq(wildcards):
         return join(FILTER_INTERIM, 'rrna', ribo_quant, '{}_R1.fastq'.format(wildcards.sample))
     elif ribo_quant == 'unitas':
         if not config['quant'].get('method') == 'unitas':
-            print(ribo_quant, config['quant']['method'])
+            raise ValueError('set method to `unitas` !')
         return _filter_get_contaminants_clean(wildcards)
     elif ribo_quant == 'mirtrace':
         return ''
