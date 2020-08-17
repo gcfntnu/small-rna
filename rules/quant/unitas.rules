@@ -65,9 +65,9 @@ rule unitas_rundir:
     input:
         seqmap = rules.unitas_db.output.seqmap_exe
     output:
-        seqmap = '___seqmap.exe'
+        seqmap = 'seqmap.exe'
     params:
-        outdir = rules.unitas_db.params.outdir
+        outdir = rules.unitas_db.output.db
     shell:
         """
         cp {input.seqmap} .

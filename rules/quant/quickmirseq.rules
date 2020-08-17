@@ -33,7 +33,7 @@ rule quickmirseq_config:
         dna_bowtie_index = abspath(join(EXT_DIR, 'quickmirseq', ORG, 'genome')),
         output = join(QUANT_INTERIM, 'quickmirseq')
     threads:
-        8
+        24
     output:
         join(QUANT_INTERIM, 'quickmirseq', 'quickmirseq.conf')
     shell:
@@ -46,11 +46,11 @@ rule quickmirseq_config:
         echo STRAND=1 >> {output}
         echo FASTQ_SUFFIX=fastq >> {output}
         echo OUTPUT_FOLDER={params.output} >> {output}
-        echo RUN_EXTENSION_EVALUATION=no >> {output}
+        echo RUN_EXTENSION_EVALUATION=yes >> {output}
         echo CUTADAPT_REQUIRED=no >> {output}
         echo REFINE_MISMATACH_READS=yes >> {output}
-        echo ZEROCOUNT_THRESHOLD=0 >> {output}
-        echo ZEROCOUNT_SAMPLE_THRESHOLD=0.60 >> {output}
+        echo ZEROCOUNT_THRESHOLD=1 >> {output}
+        echo ZEROCOUNT_SAMPLE_THRESHOLD=0.6 >> {output}
         echo AVG_READ_THRESHOLD=2 >> {output}
         echo MIN_MIRNA_LENGTH=16 >> {output}
         echo MAX_MIRNA_LENGTH=42 >> {output}
@@ -73,6 +73,8 @@ rule quickmirseq_quant:
         isomir_table = join(QUANT_INTERIM, 'quickmirseq', 'isoform.Counts.csv'),
         annotation = join(QUANT_INTERIM, 'quickmirseq', 'readAnnotDistribution.csv'),
         unmapped = join(QUANT_INTERIM, 'quickmirseq', 'unmapped.csv')
+    threads:
+        8
     singularity:
         'docker://' + config['docker']['quickmirseq']
     shell:
@@ -80,6 +82,21 @@ rule quickmirseq_quant:
         '{params.sample_file} '
         '{input.config} '
 
-rule quickmirseq_all:
+rule quickmirseq_report:
     input:
         rules.quickmirseq_quant.output
+    params:
+        outdir = join(QUANT_INTERIM, 'quickmirseq')
+    output:
+        join(QUANT_INTERIM, 'quickmirseq', 'miRNA-reads.json')
+    singularity:
+        'docker://' + config['docker']['quickmirseq']
+    shell:
+        """
+        cd {params.outdir}
+        QuickMIRSeq-report.sh
+        """
+
+rule quickmirseq_all:
+    input:
+        rules.quickmirseq_report.output
