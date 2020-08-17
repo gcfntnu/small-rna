@@ -2,7 +2,6 @@
 from os.path import join
 
 ADAPTER = config.get('adapter') or LIBPREP.get('single_end', {}).get('adapter') or LIBPREP.get('adapter')
-print(LIBPREP)
 
 rule filter_merge_fastq:
     input:

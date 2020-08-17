@@ -1,6 +1,5 @@
 #-*- mode:snakemake -*-
 
-from os.path import join, abspath
 import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
@@ -46,7 +45,7 @@ rule unitas_extra_reference:
     input:
         UNITAS_REFSEQ
     output:
-        join(QUANT_INTERIM, 'unitas', 'refseq.fa')
+        temp(join(QUANT_INTERIM, 'unitas', 'refseq.fa'))
     run:
         if len(input) > 0:
             shell('cat {input} > {output}')
@@ -68,6 +67,10 @@ rule unitas_rundir:
         seqmap = 'seqmap.exe'
     params:
         outdir = rules.unitas_db.output.db
+        seqmap = temp('seqmap.exe'),
+        db = directory('UNITAS_refdump_{}'.format(ORG))
+    params:
+        outdir = rules.unitas_db.params.ref_dir
     shell:
         """
         cp {input.seqmap} .
@@ -121,7 +124,7 @@ rule unitas_mirtable:
     params:
         script = srcdir('scripts/unitas_mirtable.py')
     output:
-        counts = join(QUANT_INTERIM, 'unitas', 'unitas.mir.counts')
+        counts = join(QUANT_INTERIM, 'unitas', 'mir_counts.tsv')
     shell:
         'python {params.script} {input} > {output}'
         
@@ -129,11 +132,13 @@ rule unitas_isomirtable:
     input:
         expand(rules.unitas.output.mirtable_ext, sample=SAMPLES)
     params:
-        script = srcdir('scripts/unitas_isomirtable.py')
+        script = srcdir('scripts/unitas_isomirtable.py'),
+        min_count = 50
     output:
-        join(QUANT_INTERIM, 'unitas', 'unitas.isomir.counts')
+        counts = join(QUANT_INTERIM, 'unitas', 'isomir_counts.tsv'),
+        anno = join(QUANT_INTERIM, 'unitas', 'isomir_counts_anno.tsv')
     shell:
-        'python {params.script} {input} > {output}'
+        'python {params.script} {input} --min-count {params.min_count} --output {output.counts}'
 
 rule unitas_trftable:
     input:
