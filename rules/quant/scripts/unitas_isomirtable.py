@@ -23,7 +23,7 @@ def argparser():
     parser = argparse.ArgumentParser(description='Aggregate unitas tables')
     parser.add_argument('--sample-sheet', help='Optional sample sheet. Will subset aggregated table if needed', dest='samples')
     parser.add_argument('-o ', '--output', help='Output filename. Will default to stdout.')
-    parser.add_argument('--min-count', help='Minimum isomir count across samples', type=int, default=50)
+    parser.add_argument('--min-count', help='Minimum isomir count across samples', type=int, default=0)
     parser.add_argument('filenames', nargs='+')
     args = parser.parse_args()
     return args
@@ -36,7 +36,9 @@ if __name__ == '__main__':
     for fn in args.filenames:
         sample_id = os.path.dirname(fn).split(os.path.sep)[-1]
         df = pd.read_csv(fn, sep='\t', index_col=False)
-        df.set_index('sequence', inplace=True)
+        index = df['sequence'] + '|' + df['miR-name']
+        #df.set_index('sequence', inplace=True)
+        df.index = index
         df['Sample_ID'] = [sample_id] * df.shape[0]
         
         df_list.append(df)
@@ -44,14 +46,15 @@ if __name__ == '__main__':
 
     DF.fillna(0, inplace=True)
 
-    isomirs = DF.pivot(columns='Sample_ID', values="+N0-3'").T
+    isomirs = DF.pivot(columns='Sample_ID', values="total_reads").T
     isomirs.fillna(0, inplace=True)
     isomirs = isomirs.loc[:,isomirs.sum(0) > args.min_count] 
     isomirs.to_csv(args.output, sep='\t')
     
-    
+
     DF_uniq = DF.loc[~DF.index.duplicated(),:]
     ANNO = DF_uniq.loc[isomirs.columns,:]
+    #ANNO = DF[['miR-name']]
     gene_names = []
     patt = re.compile('(.*)(\\(.*\\))')
     for n in ANNO['miR-name']:
@@ -59,7 +62,8 @@ if __name__ == '__main__':
         if m:
             n = m.groups()[0]
         gene_names.append(n.strip())
-    ANNO['gene_id'] = gene_names
+    #ANNO['gene_id'] = gene_names
+    ANNO.insert(1, "gene_id", gene_names, True) 
     ANNO = ANNO[['miR-name', 'gene_id']]
     ANNO.columns = ['isomir_id', 'gene_id']
     
