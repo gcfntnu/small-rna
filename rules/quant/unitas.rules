@@ -66,7 +66,7 @@ rule unitas_rundir:
     output:
         seqmap = 'seqmap.exe'
     params:
-        outdir = rules.unitas_db.output.db
+        outdir = rules.unitas_db.output.db,
         seqmap = temp('seqmap.exe'),
         db = directory('UNITAS_refdump_{}'.format(ORG))
     params:
@@ -93,7 +93,7 @@ rule unitas:
         full_annotation = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'),
         target_hits = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.hits_per_target.txt'),
         modifications = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)),
-        trf_table_ext = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.txt'),
+        trftable_ext = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.txt'),
         mirtable = join(QUANT_INTERIM, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)),
         pirna = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
         mirtable_ext= join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
@@ -104,6 +104,7 @@ rule unitas:
     shell:
         """
         unitas.pl -input {input.fastq} -s {params.org} -threads {threads} {params.args}
+        rm -rf {params.outdir}; mkdir -p {params.outdir}
         mv -f UNITAS_*{wildcards.sample}_R1.fast*_#1/* {params.outdir}/
         rm -rf UNITAS_*{wildcards.sample}_R1.*fas*_#1
         """
@@ -114,13 +115,13 @@ rule unitas_annotation2yaml:
     params:
         script = srcdir('scripts/unitas_annotation2json.py')
     output:
-        join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.annotation_summary.json')
+        join(QUANT_INTERIM, 'unitas', '{sample}', 'annotation_summary.json')
     shell:
         'python {params.script} {input} > {output}'
 
 rule unitas_mirtable:
     input:
-        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)), sample=SAMPLES)
+        expand(rules.unitas.output.mirtable, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_mirtable.py')
     output:
@@ -133,7 +134,7 @@ rule unitas_isomirtable:
         expand(rules.unitas.output.mirtable_ext, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_isomirtable.py'),
-        min_count = 50
+        min_count = 0
     output:
         counts = join(QUANT_INTERIM, 'unitas', 'isomir_counts.tsv'),
         anno = join(QUANT_INTERIM, 'unitas', 'isomir_counts_anno.tsv')
@@ -142,65 +143,64 @@ rule unitas_isomirtable:
 
 rule unitas_trftable:
     input:
-        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'), sample=SAMPLES)
+        expand(rules.unitas.output.trftable, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_trftable.py')
     output:
-        join(QUANT_INTERIM, 'unitas', 'unitas.trf.counts')
+        join(QUANT_INTERIM, 'unitas', 'trf_counts.tsv')
     shell:
         'python {params.script} {input} > {output}'
         
 rule unitas_isotrftable:
     input:
-        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.txt'), sample=SAMPLES)
+        expand(rules.unitas.output.trftable_ext, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_isotrftable.py')
     output:
-        join(QUANT_INTERIM, 'unitas', 'unitas.isotrf.counts')
+        join(QUANT_INTERIM, 'unitas', 'isotrf_counts.csv')
     shell:
         'python {params.script} {input} > {output}'
 
 rule unitas_allhits:
     input:
-        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.hits_per_target.txt'), sample=SAMPLES)
+        expand(rules.unitas.output.target_hits, sample=SAMPLES)
     params:
-        script = srcdir('scripts/unitas_allhits.py')
-        
+        script = srcdir('scripts/unitas_allhits.py') 
     output:
-        join(QUANT_INTERIM, 'unitas', 'unitas.allhits.counts')
+        join(QUANT_INTERIM, 'unitas', 'allhits.tsv')
     shell:
         'python {params.script} {input} --output {output}'
         
 rule unitas_modifications:
     input:
-        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)), sample=SAMPLES)
+        expand(rules.unitas.output.modifications, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_modifications.py'),
-        out = join(QUANT_INTERIM, 'unitas', 'unitas.')
+        out = join(QUANT_INTERIM, 'unitas')
     output:
-        join(QUANT_INTERIM, 'unitas', 'unitas.modification_per_position.counts'),
-        join(QUANT_INTERIM, 'unitas', 'unitas.internal_modification.counts')
+        join(QUANT_INTERIM, 'unitas', 'modification_per_position.tsv'),
+        join(QUANT_INTERIM, 'unitas', 'internal_modification.tsv')
     shell:
         'python {params.script} -o {params.out} {input}'
         
 rule unitas_annotations:
     input:
-        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.annotation_summary.txt'), sample=SAMPLES)
+        expand(rules.unitas.output.annotation, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_annotations.py')
     output:
-        join(QUANT_INTERIM, 'unitas', 'unitas.annotations.txt')
+        join(QUANT_INTERIM, 'unitas', 'annotations.tsv')
     shell:
         'python {params.script} {input} > {output}'
 
 rule unitas_allfeatures:
     input:
-        expand(join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'), sample=SAMPLES)
+        expand(rules.unitas.output.full_annotation, sample=SAMPLES)
     params:
         script = srcdir('scripts/unitas_feature_counts.py')
         
     output:
-        join(QUANT_INTERIM, 'unitas', 'unitas.featurecounts.counts')
+        join(QUANT_INTERIM, 'unitas', 'allfeatures.tsv')
     shell:
         'python {params.script} --frac-counts {input} --output {output}'
         
@@ -212,4 +212,5 @@ rule unitas_all:
         rules.unitas_isotrftable.output,
         rules.unitas_allhits.output,
         rules.unitas_modifications.output,
-        rules.unitas_annotations.output
+        rules.unitas_annotations.output,
+        rules.unitas_allfeatures.output

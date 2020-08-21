@@ -38,7 +38,7 @@ rule spikein_filter_bowtie:
         R1 = _filter_get_trimmed,
         index = get_spikein_index() + '.1.ebwt'
     output:
-        R1 = join(FILTER_INTERIM, 'spikein', 'bowtie', '{sample}_R1.fastq'),
+        R1 = temp(join(FILTER_INTERIM, 'spikein', 'bowtie', '{sample}_R1.fastq')),
         counts = join(FILTER_INTERIM, 'spikein', 'bowtie', '{sample}.counts')
     singularity:
         'docker://' + config['docker']['bowtie_samtools']
@@ -65,7 +65,7 @@ rule spikein_filter_bowtie2:
         R1 = _filter_get_trimmed,
         index = get_spikein_index() + '.1.bt2'
     output:
-        R1 = join(FILTER_INTERIM, 'spikein', 'bowtie2', '{sample}_R1.fastq'),
+        R1 = temp(join(FILTER_INTERIM, 'spikein', 'bowtie2', '{sample}_R1.fastq')),
         counts = join(FILTER_INTERIM, 'spikein', 'bowtie2', '{sample}.counts')
     singularity:
         'docker://' + config['docker']['bowtie2_samtools']
@@ -89,13 +89,14 @@ rule spikein_filter_bowtie2:
         '2>> {log.error} '
 
 def _filter_get_calibrator_clean(wildcards):
-    cal_quant = config['filter']['spikein']['quantifier']
+    cal_quant = config['filter'].get('spikein', {}).get('quantifier', 'skip')
+    if cal_quant == 'skip':
+        return _filter_get_trimmed(wildcards)
+    if cal_quant is None and config['quant'].get('method') == 'unitas':
+        cal_quant = 'unitas'
     if cal_quant == 'unitas':
-        assert(config['quant'].get('method') == 'unitas')
         return _filter_get_trimmed(wildcards)
     elif cal_quant in ['bowtie', 'bowtie2']:
         return join(FILTER_INTERIM, 'spikein', cal_quant, '{}_R1.fastq'.format(wildcards.sample))
-    elif cal_quant == 'skip':
-        return _filter_get_trimmed(wildcards)
     else:
         raise ValueError('calibrator quantifier option not valid: {}'.format(cal_quant))

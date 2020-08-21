@@ -36,7 +36,7 @@ rule contaminants_filter_se_bowtie:
         R1 = _filter_get_calibrator_clean,
         index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie', 'contaminants.1.ebwt')
     output:
-        R1 = join(FILTER_INTERIM, 'contaminants', 'bowtie', '{sample}_R1.fastq'),
+        R1 = temp(join(FILTER_INTERIM, 'contaminants', 'bowtie', '{sample}_R1.fastq')),
         counts = join(FILTER_INTERIM, 'contaminants', 'bowtie', '{sample}.counts')
     singularity:
         'docker://' + config['docker']['bowtie_samtools']
@@ -63,7 +63,7 @@ rule contaminants_filter_se_bowtie2:
         R1 = _filter_get_calibrator_clean,
         index = join(INTERIM_DIR, 'contaminants', 'index', 'contaminants', 'bowtie2', 'contaminants.1.bt2')
     output:
-        R1 = join(FILTER_INTERIM, 'contaminants', 'bowtie2', '{sample}_R1.fastq'),
+        R1 = temp(temp(join(FILTER_INTERIM, 'contaminants', 'bowtie2', '{sample}_R1.fastq'))),
         counts = join(FILTER_INTERIM, 'contaminants', 'bowtie2', '{sample}.counts')
     params:
         args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
@@ -88,7 +88,8 @@ rule contaminants_filter_se_bowtie2:
 
 
 def _filter_get_contaminants_clean(wildcards):
-    quant = config['filter']['contaminants']['quantifier']
+    quant = config['filter'].get('contaminants', {}).get('quantifier', 'skip')
+    
     if quant == 'unitas':
         assert(config['quant'].get('method') == 'unitas')
         return _filter_get_calibrator_clean(wildcards)

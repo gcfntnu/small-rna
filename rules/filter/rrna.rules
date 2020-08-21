@@ -53,7 +53,7 @@ rule rrna_filter_se_bowtie:
     threads:
         2
     log:
-        bowtie = join(FILTER_INTERIM, 'rrna', 'bowtie', '{sample}.filter.log'),
+        bowtie = temp(join(FILTER_INTERIM, 'rrna', 'bowtie', '{sample}.filter.log')),
         error = join(FILTER_INTERIM, 'rrna', 'bowtie', '{sample}.filter.error')
     shell:
         'bowtie {params.index} '
@@ -70,7 +70,7 @@ rule rrna_filter_se_bowtie2:
         R1 = _filter_get_contaminants_clean,
         index = join(EXT_DIR, RRNA_REF, ORG, 'index', 'rrna', 'bowtie2', 'rrna' + '.1.bt2')
     output:
-        R1 = join(FILTER_INTERIM, 'rrna', 'bowtie2', '{sample}_R1.fastq'),
+        R1 = temp(join(FILTER_INTERIM, 'rrna', 'bowtie2', '{sample}_R1.fastq')),
         counts = join(FILTER_INTERIM, 'rrna', 'bowtie2', '{sample}.counts')
     params:
         args = '-D 15 -R 2 -N 0 -L 18 -i S,1,0 --norc',
@@ -99,7 +99,7 @@ rule rrna_filter_se_bbduk_universal:
         R1 = _filter_get_contaminants_clean,
         ref = join(EXT_DIR, 'JGI', 'fasta', 'ribokmers.fa.gz')
     output:
-        R1 = join(FILTER_INTERIM, 'rrna', 'bbduk_universal', '{sample}_R1.fastq'),
+        R1 = temp(join(FILTER_INTERIM, 'rrna', 'bbduk_universal', '{sample}_R1.fastq')),
         counts = join(FILTER_INTERIM, 'rrna', 'bbduk_universal', '{sample}.counts')
     singularity:
         'docker://' + config['docker']['bbmap']
@@ -123,7 +123,7 @@ rule rrna_filter_se_sortmerna:
         R1 = _filter_get_contaminants_clean,
         ref = expand(join(EXT_DIR, 'sortmerna', '{db}.idx.stats'), db=SMDB)
     output:
-        fastq = join(FILTER_INTERIM, 'rrna', 'sortmerna', '{sample}_R1.fastq'),
+        fastq = temp(join(FILTER_INTERIM, 'rrna', 'sortmerna', '{sample}_R1.fastq')),
         counts = join(FILTER_INTERIM, 'rrna', 'sortmerna', '{sample}.counts')
     params:
         args = '--fastx --sam ',
@@ -138,7 +138,9 @@ rule rrna_filter_se_sortmerna:
 
         
 def _filter_clean_fastq(wildcards):
-    ribo_quant = config['filter']['ribosomal']['quantifier']
+    ribo_quant = config['filter'].get('ribosomal', {}).get('quantifier', 'skip')
+    if config['quant']['method'] == 'unitas':
+        ribo_quant = config['filter']['ribosomal']['quantifier'] = 'unitas'
     
     if ribo_quant in ['bbduk', 'sortmerna', 'bowtie', 'bowtie2']:
         return join(FILTER_INTERIM, 'rrna', ribo_quant, '{}_R1.fastq'.format(wildcards.sample))
@@ -147,7 +149,7 @@ def _filter_clean_fastq(wildcards):
             raise ValueError('set method to `unitas` !')
         return _filter_get_contaminants_clean(wildcards)
     elif ribo_quant == 'mirtrace':
-        return ''
+        return _filter_get_contaminants_clean(wildcards)
     elif ribo_quant == 'skip':
         return  _filter_get_contaminants_clean(wildcards)
     else:
