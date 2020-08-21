@@ -65,7 +65,7 @@ if __name__ == '__main__':
     #ANNO['gene_id'] = gene_names
     ANNO.insert(1, "gene_id", gene_names, True) 
     ANNO = ANNO[['miR-name', 'gene_id']]
-    ANNO.columns = ['isomir_id', 'gene_id']
+    ANNO.columns = ['isomir_id', 'mirna_id']
     
     anno_fn = os.path.splitext(args.output)[0] + '_anno.tsv'
     ANNO.to_csv(anno_fn, sep='\t')

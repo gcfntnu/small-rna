@@ -1,4 +1,8 @@
 #!/usr/bin env python
+""" Parse the unitas simplified mirna table.
+
+Counts in this table is different from counts of micro-rna in allfeatures table as this table is not doing fractionated counts on sequences with multiple annotations.
+"""
 
 import sys
 import os
@@ -44,6 +48,6 @@ if __name__ == '__main__':
     else:
         out_fn = args.output
     DF.fillna(0, inplace=True)
-    DF.index.name = 'MIR_ID'
+    DF.index.name = 'mirna_id'
     DF.to_csv(out_fn, sep='\t')
     

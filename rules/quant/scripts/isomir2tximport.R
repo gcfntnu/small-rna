@@ -41,15 +41,15 @@ count2TPM <- function(counts, prior.count=0){
     return(TPM)
 }
 
-if (args.method == "unitas"){
+if (args$type == "unitas"){
     counts <- read.delim(args$input, sep="\t", row.names=1, check.names=FALSE)
     anno <- read.delim(args$features, sep="\t", row.names=1, check.names=FALSE)
-    anno <- anno[rownames(counts),]
+    anno <- anno[colnames(counts),]
 }
 
 countsMat <- t(as.matrix(round(counts)))
 keep.ids <- rowSums(countsMat >= args$minc) >= args$mins
-countsMat <- countsMat[,keep.ids]
+countsMat <- countsMat[keep.ids,]
 lengthMat <- matrix(1, nrow=nrow(countsMat), ncol=ncol(countsMat))
 abundanceMat <- edgeR::cpm(countsMat)
 
@@ -57,6 +57,7 @@ txi.tx <- list(abundance=abundanceMat, counts=countsMat, length=lengthMat,
                countsFromAbundance="no")
 
 txi.tx$type <- args$type
+print(head(anno))
 txi.tx$tx2gene <- anno[,c("isomir_id", "mirna_id")]
 
-saveRDS(txi, args.output)
+saveRDS(txi.tx, args$output)
