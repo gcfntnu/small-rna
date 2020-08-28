@@ -199,14 +199,13 @@ rule unitas_allfeatures:
     input:
         expand(rules.unitas.output.full_annotation, sample=SAMPLES)
     params:
-        script = srcdir('scripts/unitas_feature_counts.py')
-        
+        script = srcdir('scripts/unitas_feature_counts.py') 
     output:
         join(QUANT_INTERIM, 'unitas', 'allfeatures.tsv')
     shell:
         'python {params.script} --frac-counts --output {output} {input} '
 
-rule unitas_tximport:
+rule unitas_isomir_tximport:
     input:
         counts = rules.unitas_isomirtable.output.counts,
         anno = rules.unitas_isomirtable.output.anno
@@ -220,7 +219,25 @@ rule unitas_tximport:
         '--feature-info {input.anno} '
         '--type unitas '
         '--output {output} -v '
-        
+
+rule unitas_mirna_anndata:
+    input:
+        mir_table = rules.unitas_mirtable.output,
+        sample_info = join(INTERIM_DIR, 'sample_info.tsv'),
+        feature_info = rules. mirbase_genes.output
+    output:
+        join(QUANT_INTERIM, 'unitas', 'adata.h5ad')
+    params:
+        script = srcdir('scripts/create_anndata.py')
+    singularity:
+        'docker://' + config['docker']['scanpy']
+    shell:
+        'python {params.script} '
+        '--input {input.mir_table} '
+        '--sample-info {input.sample_info} '
+        '--feature-info {input.feature_info} '
+        '--output {output} '
+
         
 rule unitas_all:
     input:
@@ -232,3 +249,4 @@ rule unitas_all:
         rules.unitas_modifications.output,
         rules.unitas_annotations.output,
         rules.unitas_allfeatures.output
+
