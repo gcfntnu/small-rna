@@ -8,7 +8,8 @@ warnings.filterwarnings('ignore', message='numpy.dtype size changed')
 import pandas as pd
 import numpy as np
 import scanpy as sc
-
+import matplotlib.pyplot as plt
+plt.ioff()
 
 def argparser():
     parser = argparse.ArgumentParser(description='Dimred plot from anndata')
@@ -33,8 +34,6 @@ if __name__ == "__main__":
 
     n_comps = min(20, min(adata.shape)-1)
     sc.tl.pca(adata, svd_solver='arpack', n_comps=n_comps)
-    #sc.pp.neighbors(adata, n_neighbors=min(10, n_comps), n_pcs=n_comps)
-    #tl.umap(adata)
-    #sc.pl.pca(adata, color=['Sample_Group'])
-    fig = sc.pl.pca(adata, color=['Sample_Group'], return_fig=True)
-    fig.savefig(args.output)
+
+    sc.pl.pca(adata, color=['Sample_Group'], save=args.output)
+    #fig.savefig(args.output)

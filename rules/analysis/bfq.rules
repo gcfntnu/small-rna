@@ -5,10 +5,20 @@ def bfq_counts(wildcards):
     if config['quant']['method'] == 'quickmirseq':
         return rules.quickmirseq_quant.output
 
-rule bfq_preprocess_counts:
-
 rule bfq_pca:
-
+    input:
+        'data/tmp/smallrna/quant/unitas/adata.h5ad'
+    output:
+        join(BFQ_INTERIM, 'pca.png')
+    params:
+        script = srcdir('scripts/plotpca2.py')
+    singularity:
+        'docker://' + config['docker']['scanpy']    
+    shell:
+        'python {params.script} '
+        '--input {input} '
+        '--output {output} '
+        
 rule bfq_qc:
 
 rule bfq_exprs:
