@@ -7,9 +7,9 @@ def bfq_counts(wildcards):
 
 rule bfq_pca:
     input:
-        'data/tmp/smallrna/quant/unitas/adata.h5ad'
+        join(QUANT_INTERIM, 'unitas', 'adata.h5ad')
     output:
-        join(BFQ_INTERIM, 'pca.png')
+        join(BFQ_INTERIM, 'pca_mqc.png')
     params:
         script = srcdir('scripts/plotpca2.py')
     singularity:
@@ -18,8 +18,38 @@ rule bfq_pca:
         'python {params.script} '
         '--input {input} '
         '--output {output} '
-        
-rule bfq_qc:
+
+rule bfq_gene_biotypes:
+    input:
+        join(QUANT_INTERIM, 'unitas', 'annotations.tsv"')
+    params:
+        script = srcdir('scripts/plot_biotype.py')
+    singularity:
+        'docker://' + config['docker']['scanpy']   
+    output:
+        join(BFQ_INTERIM, 'figs', 'gene_biotypes_mqc.yaml'),
+    shell:
+        'python {params.script} '
+        '{input.exprs} '
+        '--sample-info {input.sample_info} '
+        '--output {output} '
+        '--feature-info {input.feature_info} '
+
+rule bfq_mirna_high:
+    input:
+        exprs = join(QUANT_INTERIM, 'unitas', 'adata.h5ad')
+    params:
+        script = srcdir('scripts/plot_highly_expressed.py')
+    singularity:
+        'docker://' + config['docker']['bfq_plot']
+    output:
+        join(BFQ_INTERIM, 'figs', 'gene_high_mqc.yaml')
+    shell:
+        'python {params.script} '
+        '{input.exprs} '
+        '--sample-info {input.sample_info} '
+        '--output {output} '
+        '--feature-info {input.feature_info} '
 
 rule bfq_exprs:
 

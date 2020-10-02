@@ -236,8 +236,11 @@ rule unitas_mirna_anndata:
         '--input {input.mir_table} '
         '--sample-info {input.sample_info} '
         '--feature-info {input.feature_info} '
+        '--add-vsn '
         '--output {output} '
 
+rule unitas_biotypes:
+    input:
         
 rule unitas_all:
     input:
