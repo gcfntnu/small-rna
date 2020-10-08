@@ -164,7 +164,7 @@ if __name__ == "__main__":
     
     adata = sc.read(args.input)
 
-    adata.obs['Sample_Group'] = adata.obs['Tissue'].copy()
+    #adata.obs['Sample_Group'] = adata.obs['Tissue'].copy()
     
     n_samples, n_genes = adata.shape
     if args.method == 'auto':
@@ -198,8 +198,8 @@ if __name__ == "__main__":
         adata = adata[:, adata.var.highly_variable]
 
     elif args.recipe == 'vsd':
+        pass
         
-    
     sc.tl.pca(adata, svd_solver='arpack', n_comps=n_comps)
 
     if args.method == 'umap':
