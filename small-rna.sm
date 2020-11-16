@@ -17,7 +17,9 @@ GCFDB_DIR = environ.get('GCF_DB') or config.get('gcfdb_dir', 'src/gcfdb')
 GCFDB_DIR = abspath(GCFDB_DIR)
 
 include:
-    join(GCFDB_DIR, 'utils.py')
+    join(GCFDB_DIR, 'common/utils.py')
+include:
+    join(GCFDB_DIR, 'common/common.rules')
 
 extra_conf_fn = srcdir('small-rna.config')
 if os.path.exists(extra_conf_fn):
@@ -47,18 +49,8 @@ include:
     'rules/filter.rules'
 include:
     'rules/quant.rules'
-
-
-rule sample_info:
-    output:
-        join(INTERIM_DIR, 'sample_info.tsv')
-    singularity:
-        'docker://gcfntnu/python-base:3.7'
-    params:
-        script = srcdir('scripts/create_sampleinfo.py')
-    shell:
-        'python {params.script} config.yaml > {output}'
-
+include:
+    'rules/bfq.rules'
     
 onsuccess:
     # write config
