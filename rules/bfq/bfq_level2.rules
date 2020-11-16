@@ -14,6 +14,7 @@ rule bfq_pca:
         'docker://' + config['docker']['scanpy']    
     shell:
         'python {params.script} '
+        '--recipe smallrna '
         '--input {input} '
         '--output {output} '
 
