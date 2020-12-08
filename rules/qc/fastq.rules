@@ -28,16 +28,16 @@ rule qc_fastq_fastqscreen_config:
     output:
         temp('fastq_screen.config')
     params:
-        human = join(EXT_DIR, 'ensembl', 'homo_sapiens', 'release-{}'.format(DB_CONF['release']), 'GRCh38', 'index', 'genome', 'bowtie2'),
-        mouse = join(EXT_DIR, 'ensembl', 'mus_musculus', 'release-{}'.format(DB_CONF['release']), 'GRCm38', 'index', 'genome', 'bowtie2'),
-        rat = join(EXT_DIR, 'ensembl', 'mus_musculus', 'release-{}'.format(DB_CONF['release']), 'Rnor_6.0', 'index', 'genome', 'bowtie2'),
-        univec = join(EXT_DIR, 'univec_core', 'index', 'univec_core', 'bowtie2')  
+        human = join(EXT_DIR, 'ensembl', 'homo_sapiens', 'release-{}'.format(DB_CONF['release']), 'GRCh38', 'index', 'genome', 'bowtie2', 'genome'),
+        mouse = join(EXT_DIR, 'ensembl', 'mus_musculus', 'release-{}'.format(DB_CONF['release']), 'GRCm38', 'index', 'genome', 'bowtie2', 'genome'),
+        rat = join(EXT_DIR, 'ensembl', 'rattus_norvegicus', 'release-{}'.format(DB_CONF['release']), 'Rnor_6.0', 'index', 'genome', 'bowtie2', 'genome'),
+        univec = join(EXT_DIR, 'univec_core', 'index', 'univec_core', 'bowtie2', 'univec_core')  
     shell:
         """
-        echo DATABASE {params.human} BOWTIE2 > {output}
-        echo DATABASE {params.mouse} BOWTIE2 > {output}
-        echo DATABASE {params.rat} BOWTIE2 > {output}
-        echo DATABASE {params.univec} BOWTIE2 > {output}
+        echo DATABASE Human {params.human} > {output}
+        echo DATABASE Mouse {params.mouse} >> {output}
+        echo DATABASE Rat {params.rat}  >> {output}
+        echo DATABASE UniVec {params.univec} >> {output}
         """
 
 rule qc_fastq_fastqscreen:
@@ -45,11 +45,11 @@ rule qc_fastq_fastqscreen:
         fastq = get_processed_fastq,
         config = 'fastq_screen.config'
     output:
-        join(QC_INTERIM, 'fastqscreen', '{sample}', 'haha.txt')
+        join(QC_INTERIM, 'fastqscreen', '{sample}', '{sample}_R1_screen.txt')
     params:
         args = '-q --force',
         subset = 400000,
-        top = '100000,500000',
+        top = '10000 ',
         outdir = join(QC_INTERIM, 'fastqscreen', '{sample}')
     threads:
         4
@@ -57,10 +57,11 @@ rule qc_fastq_fastqscreen:
         'docker://' + config['docker']['fastq-screen']
     shell:
         'fastq_screen '
+        '--aligner bowtie2 '
         '--threads {threads} '
         '--top {params.top} '
         '--conf {input.config} '
-        '--outdir {params.outdir}'
+        '--outdir {params.outdir} '
         '{params.args} '
         '{input.fastq} '
 
