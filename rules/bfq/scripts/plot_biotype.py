@@ -12,7 +12,7 @@ import numpy as np
 
 
 def biotype_yaml(anno):
-    tab = anno.T
+    tab = anno
     tab_rel = tab / tab.sum(0)
     keep = (tab_rel >= 0.01).sum(1) > 0
     tab = tab.loc[keep, :]

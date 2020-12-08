@@ -70,7 +70,7 @@ rule unitas_rundir:
         seqmap = temp('seqmap.exe'),
         db = directory('UNITAS_refdump_{}'.format(ORG))
     params:
-        outdir = rules.unitas_db.params.ref_dir
+        outdir = rules.unitas_db.params.refdir
     shell:
         """
         cp {input.seqmap} .
@@ -83,27 +83,27 @@ rule unitas:
         fastq = get_unitas_seq,
         refseq = rules.unitas_extra_reference.output
     params:
-        outdir = abspath(join(QUANT_INTERIM, 'unitas', '{sample}')),
-        args = UNITAS_ARGS + ' -species_miR_only ',
+        outdir = abspath(join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}')),
+        args = UNITAS_ARGS,
         org  = config['organism']
     output:
-        html = join(QUANT_INTERIM, 'unitas', '{sample}', 'results.html'),
-        trftable = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'),
-        annotation = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.annotation_summary.txt'),
-        full_annotation = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'),
-        target_hits = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.hits_per_target.txt'),
-        modifications = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)),
-        trftable_ext = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.tRF-table.txt'),
-        mirtable = join(QUANT_INTERIM, 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)),
-        pirna = join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
-        mirtable_ext= join(QUANT_INTERIM, 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
+        html = join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'results.html'),
+        trftable = join(QUANT_INTERIM, 'unitas',  'unitas', '{sample}', 'unitas.tRF-table.simplified.txt'),
+        annotation = join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'unitas.annotation_summary.txt'),
+        full_annotation = join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'unitas.full_annotation_matrix.txt'),
+        target_hits = join(QUANT_INTERIM, 'unitas',  'unitas', '{sample}', 'unitas.hits_per_target.txt'),
+        modifications = join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'unitas.miR-modifications_{}.txt'.format(UNITAS_ORG)),
+        trftable_ext = join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'unitas.tRF-table.txt'),
+        mirtable = join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'miR-table_{}.simplified.txt'.format(UNITAS_ORG)),
+        pirna = join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'unitas.piRcandidates-tails_{}.txt'.format(UNITAS_ORG)),
+        mirtable_ext= join(QUANT_INTERIM, 'unitas', 'unitas', '{sample}', 'unitas.miR-table_{}.txt'.format(UNITAS_ORG))
     singularity:
         'docker://' + config['docker']['unitas']
     threads:
         2
     shell:
         """
-        unitas.pl -input {input.fastq} -s {params.org} -threads {threads} {params.args}
+        unitas.pl -input {input.fastq} -s {params.org} -threads {threads} {params.args} 
         rm -rf {params.outdir}; mkdir -p {params.outdir}
         mv -f UNITAS_*{wildcards.sample}_R1.fast*_#1/* {params.outdir}/
         rm -rf UNITAS_*{wildcards.sample}_R1.*fas*_#1
