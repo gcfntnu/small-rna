@@ -6,3 +6,11 @@ include:
     'bfq/bfq_level3.rules'
     
 rule bfq_all:
+    input:
+        join(BFQ_INTERIM, 'figs', 'pca_mqc.yaml'),
+        join(BFQ_INTERIM, 'figs', 'gene_high_mqc.yaml'),
+        rules.bfq_exprs.output,
+        rules.bfq_unitas.output,
+        rules.bfq_aligned.output,
+        rules.bfq_logs.output
+        

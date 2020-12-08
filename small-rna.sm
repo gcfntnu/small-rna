@@ -48,7 +48,11 @@ include:
 include:
     'rules/filter.rules'
 include:
+    'rules/align.rules'
+include:
     'rules/quant.rules'
+include:
+    'rules/qc.rules'
 include:
     'rules/bfq.rules'
     
