@@ -70,7 +70,7 @@ rule unitas_rundir:
         seqmap = temp('seqmap.exe'),
         db = directory('UNITAS_refdump_{}'.format(ORG))
     params:
-        outdir = rules.unitas_db.params.ref_dir
+        outdir = rules.unitas_db.params.refdir
     shell:
         """
         cp {input.seqmap} .
