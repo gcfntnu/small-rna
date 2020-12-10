@@ -77,7 +77,7 @@ rule qc_fastq_mirtrace_config:
     run:
         with open(output[0], 'w') as fh:
             for name, info in config['samples'].items():
-                filename = join(config['fastq_dir'], info['R1'])
+                filename = join(FASTQ_DIR, info['R1'])
                 line = ','.join([os.path.abspath(filename), name])
                 fh.write(line + '\n')
 
@@ -85,7 +85,7 @@ def mirtrace_input(*args):
     os.makedirs(MIRTRACE_DIR, exist_ok=True)
     out = []
     for k, v in config['samples'].items():
-        filename = os.path.abspath(join(config['fastq_dir'], v['R1']))  
+        filename = os.path.abspath(join(FASTQ_DIR, v['R1']))  
         out.append(filename)
     return out
 
