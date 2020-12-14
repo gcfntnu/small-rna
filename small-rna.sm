@@ -10,52 +10,16 @@ Documentation: https://github.com/small-rna
 Authors:
 Arnar Flatberg / flatberg <arnar.flatberg@gmail.com>
 """
+from os import environ
+from os.path import abspath, join
 
-from os.path import join, abspath, dirname
-from os import makedirs, environ
-import sys
-import collections
-import yaml
+GCFDB_DIR = environ.get('GCF_DB') or config.get('gcfdb_dir', 'src/gcfdb')
+GCFDB_DIR = abspath(GCFDB_DIR)
 
-from snakemake.workflow import srcdir
-from snakemake.logging import logger
-from snakemake.utils import update_config
-
-def update_config2(config, extra_config):
-    """Recursively update dictionary config with overwrite_config.
-
-    From Snakemake codebase (update_config), this does not overwrite if key exist
-
-    See
-    http://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-    for details.
-
-    Args:
-      config (dict): dictionary to update
-      overwrite_config (dict): dictionary whose items will overwrite those in config
-
-    """
-    
-    def _update(d, u):
-        for (key, value) in u.items():
-            if (isinstance(value, collections.Mapping)):
-                d[key] = _update(d.get(key, {}), value)
-            else:
-                if not key in d:
-                    d[key] = value
-        return d
-    return _update(config, extra_config)
-
-TMPDIR = os.environ.get('TMPDIR', '/tmp')
-# environment variables can override config file
-INTERIM_DIR = environ.get('GCF-INTERIM') or config.get('interim_dir', 'data/tmp/')
-makedirs(INTERIM_DIR, exist_ok=True)
-EXT_DIR = environ.get('GCF-EXT') or config.get('ext_dir', 'data/ext')
-makedirs(EXT_DIR, exist_ok=True)
-FASTQ_DIR =  environ.get('GCF-FASTQ') or config.get('fastq_dir','data/raw/fastq')
-makedirs(FASTQ_DIR, exist_ok=True)
-PROCESSED_DIR =  environ.get('GCF-PROCESSED') or config.get('processed_dir', 'data/processed')
-makedirs(PROCESSED_DIR, exist_ok=True)
+include:
+    join(GCFDB_DIR, 'common/utils.py')
+include:
+    join(GCFDB_DIR, 'common/common.rules')
 
 extra_conf_fn = srcdir('small-rna.config')
 if os.path.exists(extra_conf_fn):
@@ -63,16 +27,35 @@ if os.path.exists(extra_conf_fn):
         c  = yaml.load(fh) or {}
         # original config will override extra config on shared items
         update_config2(config, c)
+        
+kit = config.get('libprepkit', 'default-smallrna')
+if kit.startswith('Lexogen'):
+    # we cut start/end random seqs on lexogen kits
+    read_geometry = config.get('read_geometry')
+    if read_geometry:
+        read_geometry = [int(i) for i in read_geometry]
+        read_geometry[0] -= 4
+        if len(read_geometry) > 1:
+            read_geometry[0] -= 4
+        config['read_geometry'] = read_geometry
 
-SAMPLES = config.get('samples', [])
-if SAMPLES:
-    SAMPLES = list(SAMPLES.keys())
+        
+if not 'SAMPLES' in locals():
+    SAMPLES = list(config.get('samples', {}).keys())
 
+include:
+    'rules/gcfdb.rules'
 include:
     'rules/filter.rules'
 include:
+    'rules/align.rules'
+include:
     'rules/quant.rules'
-
+include:
+    'rules/qc.rules'
+include:
+    'rules/bfq.rules'
+    
 onsuccess:
     # write config
     from datetime import datetime

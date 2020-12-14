@@ -23,7 +23,7 @@ def samplesheet_ids(fn, sep='\t'):
 def argparser():
     parser = argparse.ArgumentParser(description='Aggregate unitas tables')
     parser.add_argument('--sample-sheet', help='Optional sample sheet. Will subset aggregated table if needed', dest='samples')
-    parser.add_argument('-o ', '--output', help='Output prefix', required=True)
+    parser.add_argument('-o ', '--output', help='Output folder', required=True)
     parser.add_argument('filenames', nargs='+')
     args = parser.parse_args()
     return args
@@ -52,7 +52,7 @@ if __name__ == '__main__':
             #    break
             
     df_lists = defaultdict(list)
-    logger.info(args.filenames)
+    #logger.info(args.filenames)
     for fn in args.filenames:
         sample_id = os.path.dirname(fn).split(os.path.sep)[-1]
         with open(fn) as fh:
@@ -95,6 +95,6 @@ if __name__ == '__main__':
             continue
         DF = pd.concat(dfl, axis=0, join='outer', sort=False)
         DF.fillna(0, inplace=True)
-        out = args.output + basename + '.counts'
+        out = os.path.join(args.output,  basename + '.tsv')
         DF.to_csv(out, sep='\t', index=False)
         logger.info('wrote: {}'.format(out))

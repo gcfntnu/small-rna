@@ -20,7 +20,7 @@ def samplesheet_ids(fn, sep='\t'):
             sample_ids.append(line.split('\t')[0])
         return sample_ids
 
-def fill(col):
+def fill_col(col):
     P = None
     for i, e in enumerate(col):
         if pd.isnull(e):
@@ -28,6 +28,15 @@ def fill(col):
         else:
             P = e
     return col
+
+def fill_row(row):
+    P = None
+    for i, e in enumerate(row):
+        if pd.isnull(e):
+            row.iloc[i] = row.iloc[i-1]
+        else:
+            P = e
+    return row
 
 def file2pandas(fn):
     with open(fn) as fh:
@@ -45,7 +54,8 @@ def file2pandas(fn):
         new_lines.append(desc + '\t' + count)
     txt = '\n'.join(new_lines)
     df = pd.read_csv(io.StringIO(txt), sep='\t')
-    df = df.apply(fill, axis=0)
+    #df.Level1 = fill_col(df.Level1)
+    #df = df.apply(fill_row, axis=1)
     return df
 
 def argparser():
@@ -74,7 +84,7 @@ if __name__ == '__main__':
     if args.output is None:
         out_fn = sys.stdout
     else:
-        out_fn = os.path.join(args.output, 'annotations.txt')
+        out_fn = os.path.join(args.output, 'annotations.tsv')
                                 
     DF.to_csv(out_fn, sep='\t', index=False)
     

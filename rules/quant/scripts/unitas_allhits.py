@@ -3,7 +3,10 @@
 
 Parses the unitas *.hits_per_target.txt files.
 
-Thsi file contains all hits in the cdna + refseq fasta files.
+This file contains all hits in the cdna + refseq fasta files.
+
+This list is sorted alphabetically according to transcript classes (capital letters first). 
+The order of transcripts within one class depends on the number of normalized read count.
 
 """
 
@@ -51,8 +54,12 @@ if __name__ == '__main__':
     else:
         out_fn = args.output
     DF.fillna(0, inplace=True)
+    
+    cols = DF.columns.tolist()
+    cols.remove('Sample_ID')
+    cols.insert(0, 'Sample_ID')
+    DF = DF[cols]
     DF.to_csv(out_fn, sep='\t', index=False)
-
     
     # pivot counts
     combined_name = ['|'.join(e) for e in zip(df.TRANSCRIPT_CLASS, df.TRANSCRIPT_NAME)]
@@ -67,9 +74,10 @@ if __name__ == '__main__':
     X = df.pivot(index='Sample_ID', columns='combined_name', values="READ_COUNT")
     X = X.fillna(0)
     if not args.output is None:
-        X.to_csv(out_fn + '.tab', sep='\t', index=False)
+        basename = os.path.splitext(out_fn)[0]
+        X.to_csv(basename + '.tab', sep='\t', index=False)
         
     #class summary
     if not args.output is None:
         C = DF.pivot_table(index='Sample_ID', columns='TRANSCRIPT_CLASS', values="READ_COUNT")
-        C.to_csv(out_fn + '.class_summary', sep='\t', index=True)
+        C.to_csv(basename + '.class_summary', sep='\t', index=True)
